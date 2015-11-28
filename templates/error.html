@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0" name="viewport">
+	<title>Commute configuration</title>
+	<link rel="stylesheet" href="{{ url_for('static', filename='bower_components/pebble-slate/dist/css/slate.min.css') }}">
+</head>
+<body>
+	<form id="main-form">
+		<div class="item-container">
+			<div class="item-container-header">{{ error_title|safe }}</div>
+			<div class="item-container-content">
+				<div class="item">
+					{{ error_message|safe }}
+				</div>
+			</div>
+		</div>
+	</form>
+	<script type="text/javascript" src="{{ url_for('static', filename='bower_components/pebble-slate/dist/js/slate.min.js') }}"></script>
+</body>
+</html>

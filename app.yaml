@@ -1,0 +1,22 @@
+# Version themes: car brands
+# * audi-1
+# * bentley-2
+# * chevrolet-3
+
+application: commute-pebble
+version: chevrolet-3
+runtime: python27
+api_version: 1
+threadsafe: yes
+
+handlers:
+- url: /static
+  static_dir: static
+  secure: always
+- url: .*
+  script: main.app
+  secure: always
+
+libraries:
+- name: jinja2
+  version: latest
