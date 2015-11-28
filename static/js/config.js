@@ -1,7 +1,7 @@
 // @codekit-prepend "dist/jstz.js"
 /* global jstz:true */
 
-$('#save').on('click', function() {
+$('.save').on('click', function() {
 	var regex_time = /([01]\d|2[0-3]):([0-5]\d)/;
 	
 	if($('#address_home').val() === "" || $('#address_work').val() === "") {
