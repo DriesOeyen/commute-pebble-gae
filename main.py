@@ -68,6 +68,7 @@ def get_config(token_account):
 	prefill = {
 		'token_account': token_account,
 		'token_timeline': token_timeline,
+		'tester': user.tester,
 		'return_to': return_to,
 		'address_home': user.address_home,
 		'address_work': user.address_work,
@@ -240,13 +241,13 @@ def task_run_pins():
 	users = models.User.query(
 		ndb.OR(
 			ndb.AND(
-				models.User.tester == True,
+				models.User.tester == True, # TODO remove testers filter
 				models.User.timeline_enabled == True,
 				models.User.timeline_work_arrival >= datetime.datetime.combine(date_epoch, now.time()) + datetime.timedelta(minutes=25),
 				models.User.timeline_work_arrival < datetime.datetime.combine(date_epoch, now.time()) + datetime.timedelta(hours=4)
 			),
 			ndb.AND(
-				models.User.tester == True,
+				models.User.tester == True, # TODO remove testers filter
 				models.User.timeline_enabled == True,
 				models.User.timeline_work_departure >= datetime.datetime.combine(date_epoch, now.time()) + datetime.timedelta(minutes=25),
 				models.User.timeline_work_departure < datetime.datetime.combine(date_epoch, now.time()) + datetime.timedelta(minutes=30)
@@ -254,7 +255,7 @@ def task_run_pins():
 		)
 	)
 	for user in users:
-		if user.tester and user.token_timeline != "":
+		if user.tester and user.token_timeline != "": # TODO remove testers check
 			logging.debug("Evaluating account {}".format(user.key.id()))
 			
 			# Calculate (estimated) departure time ("T")
@@ -365,7 +366,7 @@ def task_run_pins():
 						logging.warning("Timeline token {} for account {} has been invalidated, removing...".format(user.token_timeline, user.key.id()))
 						user.token_timeline = ""
 						user.put()
-				#except:
+				#except: # TODO uncomment so an exception doesn't interrupt the cronjob
 				#	logging.error("Error pushing pin for account {}".format(user.key.id()))
 			# Work -> home trip
 			if t_minus_work_home >= 25*60 and t_minus_work_home < 30*60:
@@ -462,6 +463,6 @@ def task_run_pins():
 						logging.warning("Timeline token {} for account {} has been invalidated, removing...".format(user.token_timeline, user.key.id()))
 						user.token_timeline = ""
 						user.put()
-				#except:
+				#except: # TODO uncomment so an exception doesn't interrupt the cronjob
 				#	logging.error("Error pushing pin for account {}".format(user.key.id()))
 	return "", 200
