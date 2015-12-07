@@ -200,10 +200,10 @@ def parse_directions(directions_json):
 
 @app.route('/directions/<token_account>')
 def get_directions(token_account):
+	token_timeline = flask.request.args.get('token_timeline', "")
 	request_orig = int(flask.request.args['request_orig'])
 	request_dest = int(flask.request.args['request_dest'])
 	request_coord = flask.request.args.get('request_coord', "")
-	# TODO save timeline token! Old one might be invalid
 	
 	# Fetch user
 	user = models.User.get_by_id(token_account)
@@ -211,6 +211,12 @@ def get_directions(token_account):
 		# User not found
 		return "", 404
 	
+	# Update timeline token if necessary
+	if token_timeline != "" and token_timeline != user.token_timeline:
+		user.token_timeline = token_timeline
+		user.put()
+	
+	# Fetch and return directions
 	try:
 		return fetch_directions(user, request_orig, request_dest, request_coord)
 	except (urllib2.URLError, urllib2.HTTPError):
@@ -248,7 +254,7 @@ def task_run_pins():
 		)
 	)
 	for user in users:
-		if user.tester:
+		if user.tester and user.token_timeline != "":
 			logging.debug("Evaluating account {}".format(user.key.id()))
 			
 			# Calculate (estimated) departure time ("T")
@@ -261,7 +267,7 @@ def task_run_pins():
 			
 			# Home -> work trip
 			if t_minus_home_work >= 25*60 and t_minus_home_work < 30*60:
-				#try:
+				try:
 					logging.debug("Pushing home -> work pin for account {}".format(user.key.id()))
 					
 					# Fetch directions, parse results
@@ -353,11 +359,17 @@ def task_run_pins():
 					request.add_header('X-User-Token', user.token_timeline)
 					request.get_method = lambda: 'PUT'
 					url = opener.open(request)
+				except urllib2.HTTPError, e:
+					if e.code == 410:
+						# Timeline token invalid, remove
+						logging.warning("Timeline token {} for account {} has been invalidated, removing...".format(user.token_timeline, user.key.id()))
+						user.token_timeline = ""
+						user.put()
 				#except:
 				#	logging.error("Error pushing pin for account {}".format(user.key.id()))
 			# Work -> home trip
 			if t_minus_work_home >= 25*60 and t_minus_work_home < 30*60:
-				#try:
+				try:
 					logging.debug("Pushing work -> home pin for account {}".format(user.key.id()))
 					
 					# Fetch directions, parse results
@@ -444,6 +456,12 @@ def task_run_pins():
 					request.add_header('X-User-Token', user.token_timeline)
 					request.get_method = lambda: 'PUT'
 					url = opener.open(request)
+				except urllib2.HTTPError, e:
+					if e.code == 410:
+						# Timeline token invalid, remove
+						logging.warning("Timeline token {} for account {} has been invalidated, removing...".format(user.token_timeline, user.key.id()))
+						user.token_timeline = ""
+						user.put()
 				#except:
 				#	logging.error("Error pushing pin for account {}".format(user.key.id()))
 	return "", 200
