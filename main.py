@@ -2,19 +2,31 @@ import models
 import flask
 
 import datetime
+import json
+import logging
 import math
 import pytz
 import urllib
 import urllib2
+from google.appengine.ext import ndb
 
 app = flask.Flask(__name__)
 
 google_maps_key = "AIzaSyDLG4q9x0pkI-eRyyL7x__pl2btULRRK8k"
 google_maps_base_url = "https://maps.googleapis.com/maps/api"
 
+pebble_timeline_base_url = "https://timeline-api.getpebble.com/v1"
+
+date_epoch = datetime.date(1970, 1, 1)
+
 REQUEST_TYPE_LOCATION = 0
 REQUEST_TYPE_HOME = 1
 REQUEST_TYPE_WORK = 2
+
+PAGE_LOCATION_WORK = 0
+PAGE_LOCATION_HOME = 1
+PAGE_HOME_WORK = 2
+PAGE_WORK_HOME = 3
 
 
 @app.errorhandler(404)
@@ -85,12 +97,12 @@ def put_user(token_account):
 	timeline_work_timezone = pytz.timezone(flask.request.form['timeline_work_timezone'])
 	timeline_work_arrival_h = int(flask.request.form['timeline_work_arrival_h'])
 	timeline_work_arrival_m = int(flask.request.form['timeline_work_arrival_m'])
-	timeline_work_arrival = datetime.datetime.combine(datetime.date.today(), datetime.time(timeline_work_arrival_h, timeline_work_arrival_m))
+	timeline_work_arrival = datetime.datetime.combine(date_epoch, datetime.time(timeline_work_arrival_h, timeline_work_arrival_m))
 	timeline_work_arrival_local = timeline_work_timezone.localize(timeline_work_arrival)
 	timeline_work_arrival_utc = pytz.utc.normalize(timeline_work_arrival_local.astimezone(pytz.utc))
 	timeline_work_departure_h = int(flask.request.form['timeline_work_departure_h'])
 	timeline_work_departure_m = int(flask.request.form['timeline_work_departure_m'])
-	timeline_work_departure = datetime.datetime.combine(datetime.date.today(), datetime.time(timeline_work_departure_h, timeline_work_departure_m))
+	timeline_work_departure = datetime.datetime.combine(date_epoch, datetime.time(timeline_work_departure_h, timeline_work_departure_m))
 	timeline_work_departure_local = timeline_work_timezone.localize(timeline_work_departure)
 	timeline_work_departure_utc = pytz.utc.normalize(timeline_work_departure_local.astimezone(pytz.utc))
 	
@@ -104,22 +116,15 @@ def put_user(token_account):
 	user.timeline_work_arrival = timeline_work_arrival_utc.replace(tzinfo=None) # Datastore won't accept datetime.datetime with tzinfo
 	user.timeline_work_departure = timeline_work_departure_utc.replace(tzinfo=None) # Datastore won't accept datetime.datetime with tzinfo
 	user.timeline_work_timezone = timeline_work_timezone.zone
+	user.trip_home_work_mean = 0
+	user.trip_home_work_count = 0
+	user.trip_work_home_mean = 0
+	user.trip_work_home_count = 0
 	user.put()
 	return "", 200
 
 
-@app.route('/directions/<token_account>')
-def get_directions(token_account):
-	request_orig = int(flask.request.args['request_orig'])
-	request_dest = int(flask.request.args['request_dest'])
-	request_coord = flask.request.args.get('request_coord', "")
-	
-	# Fetch user
-	user = models.User.get_by_id(token_account)
-	if user == None:
-		# User not found
-		return "", 404
-	
+def fetch_directions(user, request_orig, request_dest, request_coord = ""):
 	# Determine origin and destination
 	if request_orig == REQUEST_TYPE_LOCATION:
 		orig = request_coord
@@ -155,6 +160,290 @@ def get_directions(token_account):
 	}
 	
 	try:
-		return urllib2.urlopen(google_maps_base_url + "/directions/json?{}".format(urllib.urlencode(data_params))).read()
+		return urllib2.urlopen("{}/directions/json?{}".format(google_maps_base_url, urllib.urlencode(data_params))).read()
 	except (urllib2.URLError, urllib2.HTTPError):
-		return "Request: {}".format(data_params), 502
+		logging.error("Error while fetching directions. Request: {}".format(data_params))
+		raise
+
+
+def parse_directions(directions_json):
+	# Parse JSON
+	directions = json.loads(directions_json)
+	duration_normal = directions['routes'][0]['legs'][0]['duration']['value']
+	duration_traffic = directions['routes'][0]['legs'][0]['duration_in_traffic']['value']
+	duration_difference = duration_traffic - duration_normal
+	if duration_difference < 0:
+		duration_difference = 0
+	delay_ratio = float(duration_difference) / duration_normal
+	if delay_ratio > 0.25:
+		conditions_color = "darkcandyapplered"
+		conditions_text = "heavy"
+	elif delay_ratio > 0.1:
+		conditions_color = "orange"
+		conditions_text = "moderate"
+	else:
+		conditions_color = "darkgreen"
+		conditions_text = "light"
+	via = directions['routes'][0]['summary']
+	
+	# Return interesting data as dict
+	directions_dict = dict(
+		duration_normal = duration_normal,
+		duration_traffic = duration_traffic,
+		duration_delay = duration_difference,
+		conditions_color = conditions_color,
+		conditions_text = conditions_text,
+		via = via
+	)
+	return directions_dict
+
+
+@app.route('/directions/<token_account>')
+def get_directions(token_account):
+	request_orig = int(flask.request.args['request_orig'])
+	request_dest = int(flask.request.args['request_dest'])
+	request_coord = flask.request.args.get('request_coord', "")
+	# TODO save timeline token! Old one might be invalid
+	
+	# Fetch user
+	user = models.User.get_by_id(token_account)
+	if user == None:
+		# User not found
+		return "", 404
+	
+	try:
+		return fetch_directions(user, request_orig, request_dest, request_coord)
+	except (urllib2.URLError, urllib2.HTTPError):
+		return "", 502
+
+
+# TODO get rid of this function
+@app.route('/tasks/userconvert')
+def temp_task_convert_users():
+	users = models.User.query(models.User.tester == True)
+	for user in users:
+		user.timeline_work_arrival = datetime.datetime.combine(date_epoch, user.timeline_work_arrival.time())
+		user.timeline_work_departure = datetime.datetime.combine(date_epoch, user.timeline_work_departure.time())
+		user.put()
+	return "", 200
+
+
+@app.route('/tasks/pins')
+def task_run_pins():
+	now = datetime.datetime.utcnow()
+	users = models.User.query(
+		ndb.OR(
+			ndb.AND(
+				models.User.tester == True,
+				models.User.timeline_enabled == True,
+				models.User.timeline_work_arrival >= datetime.datetime.combine(date_epoch, now.time()) + datetime.timedelta(minutes=25),
+				models.User.timeline_work_arrival < datetime.datetime.combine(date_epoch, now.time()) + datetime.timedelta(hours=4)
+			),
+			ndb.AND(
+				models.User.tester == True,
+				models.User.timeline_enabled == True,
+				models.User.timeline_work_departure >= datetime.datetime.combine(date_epoch, now.time()) + datetime.timedelta(minutes=25),
+				models.User.timeline_work_departure < datetime.datetime.combine(date_epoch, now.time()) + datetime.timedelta(minutes=30)
+			)
+		)
+	)
+	for user in users:
+		if user.tester:
+			logging.debug("Evaluating account {}".format(user.key.id()))
+			
+			# Calculate (estimated) departure time ("T")
+			t_home_work = user.timeline_work_arrival - datetime.timedelta(seconds = user.trip_home_work_mean + 3600)
+			t_work_home = user.timeline_work_departure
+			
+			# Calculate seconds until (estimated) departure time ("T-minus")
+			t_minus_home_work = (t_home_work - now).seconds # timedelta.seconds ignores difference in date
+			t_minus_work_home = (t_work_home - now).seconds
+			
+			# Home -> work trip
+			if t_minus_home_work >= 25*60 and t_minus_home_work < 30*60:
+				#try:
+					logging.debug("Pushing home -> work pin for account {}".format(user.key.id()))
+					
+					# Fetch directions, parse results
+					directions_json = fetch_directions(user, REQUEST_TYPE_HOME, REQUEST_TYPE_WORK)
+					directions = parse_directions(directions_json)
+					
+					# Update user stats
+					user.trip_home_work_mean = (user.trip_home_work_mean * user.trip_home_work_count + directions.duration_traffic) / (user.trip_home_work_count + 1)
+					user.trip_home_work_count += 1
+					user.timeline_pins_sent += 1
+					user.put()
+					
+					# Stop here if this is the first home -> work trip
+					# Because user.trip_home_work_mean was initialized as 0, this pin would likely be pushed to the past
+					if user.trip_home_work_count == 1:
+						continue
+					
+					# Calculate departure/arrival times
+					timeline_work_timezone = pytz.timezone(user.timeline_work_timezone)
+					timeline_home_departure_utc = pytz.utc.localize(datetime.datetime.combine(now.date(), (user.timeline_work_arrival - datetime.timedelta(seconds = directions.duration_traffic)).time()))
+					timeline_home_departure_local = timeline_work_timezone.normalize(timeline_home_departure_utc.astimezone(timeline_work_timezone))
+					timeline_home_departure_string = timeline_home_departure_local.strftime('%H:%M')
+					timeline_work_arrival_utc = pytz.utc.localize(datetime.datetime.combine(now.date(), user.timeline_work_arrival.time()))
+					timeline_work_arrival_local = timeline_work_timezone.normalize(timeline_work_arrival_utc.astimezone(timeline_work_timezone))
+					timeline_work_arrival_string = timeline_work_arrival_local.strftime('%H:%M')
+					
+					# Push pin
+					id = "{}-{}".format(user.key.id(), user.timeline_pins_sent)
+					if int(round(directions.duration_delay / 60)) == 0:
+						duration_delay_label_minutes = "minutes"
+						duration_delay_label_cause = "thanks to"
+					elif int(round(directions.duration_delay / 60)) == 1:
+						duration_delay_label_minutes = "minute"
+						duration_delay_label_cause = "due to"
+					else:
+						duration_delay_label_minutes = "minutes"
+						duration_delay_label_cause = "due to"
+					pin = dict(
+						id = id,
+						time = timeline_home_departure_utc.isoformat(),
+						duration = int(round(directions.duration_traffic / 60)),
+						layout = dict(
+							type = "sportsPin",
+							title = "Home > work",
+							subtitle = "Via {}".format(directions.via),
+							tinyIcon = "system://images/CAR_RENTAL",
+							largeIcon = "system://images/CAR_RENTAL",
+							primaryColor = "white",
+							secondaryColor = "white",
+							backgroundColor = directions.conditions_color,
+							headings = [
+								"Route",
+								"Travel time"
+							],
+							paragraphs = [
+								"Home > work",
+								"{} - {}".format(timeline_home_departure_string, timeline_work_arrival_string)
+							],
+							lastUpdated = now.isoformat(),
+							nameAway = "Total",
+							nameHome = "Delay",
+							scoreAway = "{}".format(int(round(directions.duration_traffic / 60))),
+							scoreHome = "{}".format(int(round(directions.duration_delay / 60))),
+							sportsGameState = "in-game"
+						),
+						reminders = [
+							dict(
+								time = (timeline_home_departure_utc - datetime.timedelta(minutes=10)).isoformat(),
+								layout = dict(
+									type = "genericReminder",
+									title = "Leave for work",
+									body = "Drive via {} to arrive by {}, with {} {} of delay {} {} traffic.".format(directions.via, timeline_work_arrival_string, int(round(directions.duration_delay / 60)), duration_delay_label_minutes, duration_delay_label_cause, directions.conditions_text),
+									tinyIcon = "system://images/CAR_RENTAL"
+								)
+							)
+						],
+						actions = [
+							dict(
+								type = 'openWatchApp',
+								title = 'Open Commute',
+								launchCode = PAGE_HOME_WORK
+							)
+						]
+					)
+					logging.info(json.dumps(pin)); # TODO remove this
+					opener = urllib2.build_opener(urllib2.HTTPHandler)
+					request = urllib2.Request("{}/user/pins/{}".format(pebble_timeline_base_url, id), data = json.dumps(pin))
+					request.add_header('Content-Type', 'application/json')
+					request.add_header('X-User-Token', user.token_timeline)
+					request.get_method = lambda: 'PUT'
+					url = opener.open(request)
+				#except:
+				#	logging.error("Error pushing pin for account {}".format(user.key.id()))
+			# Work -> home trip
+			if t_minus_work_home >= 25*60 and t_minus_work_home < 30*60:
+				#try:
+					logging.debug("Pushing work -> home pin for account {}".format(user.key.id()))
+					
+					# Fetch directions, parse results
+					directions_json = fetch_directions(user, REQUEST_TYPE_WORK, REQUEST_TYPE_HOME)
+					directions = parse_directions(directions_json)
+					
+					# Update user stats
+					user.trip_work_home_mean = (user.trip_work_home_mean * user.trip_work_home_count + directions.duration_traffic) / (user.trip_work_home_count + 1)
+					user.trip_work_home_count += 1
+					user.timeline_pins_sent += 1
+					user.put()
+					
+					# Calculate departure/arrival times
+					timeline_work_timezone = pytz.timezone(user.timeline_work_timezone)
+					timeline_work_departure_utc = pytz.utc.localize(datetime.datetime.combine(now.date(), user.timeline_work_departure.time()))
+					timeline_work_departure_local = timeline_work_timezone.normalize(timeline_work_departure_utc.astimezone(timeline_work_timezone))
+					timeline_work_departure_string = timeline_work_departure_local.strftime('%H:%M')
+					timeline_home_arrival_utc = pytz.utc.localize(datetime.datetime.combine(now.date(), (user.timeline_work_departure + datetime.timedelta(seconds = directions.duration_traffic)).time()))
+					timeline_home_arrival_local = timeline_work_timezone.normalize(timeline_home_arrival_utc.astimezone(timeline_work_timezone))
+					timeline_home_arrival_string = timeline_home_arrival_local.strftime('%H:%M')
+					
+					# Push pin
+					id = "{}-{}".format(user.key.id(), user.timeline_pins_sent)
+					if int(round(directions.duration_delay / 60)) == 0:
+						duration_delay_label_minutes = "minutes"
+						duration_delay_label_cause = "thanks to"
+					elif int(round(directions.duration_delay / 60)) == 1:
+						duration_delay_label_minutes = "minute"
+						duration_delay_label_cause = "due to"
+					else:
+						duration_delay_label_minutes = "minutes"
+						duration_delay_label_cause = "due to"
+					pin = dict(
+						id = id,
+						time = timeline_work_departure_utc.isoformat(),
+						duration = int(round(directions.duration_traffic / 60)),
+						layout = dict(
+							type = "sportsPin",
+							title = "Work > home",
+							subtitle = "Via {}".format(directions.via),
+							tinyIcon = "system://images/CAR_RENTAL",
+							largeIcon = "system://images/CAR_RENTAL",
+							primaryColor = "white",
+							secondaryColor = "white",
+							backgroundColor = directions.conditions_color,
+							headings = [
+								"Route",
+								"Travel time"
+							],
+							paragraphs = [
+								"Work > home",
+								"{} - {}".format(timeline_work_departure_string, timeline_home_arrival_string)
+							],
+							lastUpdated = now.isoformat(),
+							nameAway = "Total",
+							nameHome = "Delay",
+							scoreAway = "{}".format(int(round(directions.duration_traffic / 60))),
+							scoreHome = "{}".format(int(round(directions.duration_delay / 60))),
+							sportsGameState = "in-game"
+						),
+						reminders = [
+							dict(
+								time = (timeline_work_departure_utc - datetime.timedelta(minutes=10)).isoformat(),
+								layout = dict(
+									type = "genericReminder",
+									title = "Your drive home",
+									body = "Drive via {} to arrive by {}, with {} {} of delay {} {} traffic.".format(directions.via, timeline_home_arrival_string, int(round(directions.duration_delay / 60)), duration_delay_label_minutes, duration_delay_label_cause, directions.conditions_text),
+									tinyIcon = "system://images/CAR_RENTAL"
+								)
+							)
+						],
+						actions = [
+							dict(
+								type = 'openWatchApp',
+								title = 'Open Commute',
+								launchCode = PAGE_WORK_HOME
+							)
+						]
+					)
+					logging.info(json.dumps(pin)); # TODO remove this
+					opener = urllib2.build_opener(urllib2.HTTPHandler)
+					request = urllib2.Request("{}/user/pins/{}".format(pebble_timeline_base_url, id), data = json.dumps(pin))
+					request.add_header('Content-Type', 'application/json')
+					request.add_header('X-User-Token', user.token_timeline)
+					request.get_method = lambda: 'PUT'
+					url = opener.open(request)
+				#except:
+				#	logging.error("Error pushing pin for account {}".format(user.key.id()))
+	return "", 200
