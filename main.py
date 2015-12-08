@@ -224,17 +224,6 @@ def get_directions(token_account):
 		return "", 502
 
 
-# TODO get rid of this function
-@app.route('/tasks/userconvert')
-def temp_task_convert_users():
-	users = models.User.query(models.User.tester == True)
-	for user in users:
-		user.timeline_work_arrival = datetime.datetime.combine(date_epoch, user.timeline_work_arrival.time())
-		user.timeline_work_departure = datetime.datetime.combine(date_epoch, user.timeline_work_departure.time())
-		user.put()
-	return "", 200
-
-
 @app.route('/tasks/pins')
 def task_run_pins():
 	now = datetime.datetime.utcnow()
@@ -243,14 +232,14 @@ def task_run_pins():
 			ndb.AND(
 				models.User.tester == True, # TODO remove testers filter
 				models.User.timeline_enabled == True,
-				models.User.timeline_work_arrival >= datetime.datetime.combine(date_epoch, now.time()) + datetime.timedelta(minutes=25),
-				models.User.timeline_work_arrival < datetime.datetime.combine(date_epoch, now.time()) + datetime.timedelta(hours=4)
+				models.User.timeline_work_arrival >= datetime.datetime.combine(date_epoch, (now + datetime.timedelta(minutes=25)).time()),
+				models.User.timeline_work_arrival < datetime.datetime.combine(date_epoch, (now + datetime.timedelta(hours=4)).time())
 			),
 			ndb.AND(
 				models.User.tester == True, # TODO remove testers filter
 				models.User.timeline_enabled == True,
-				models.User.timeline_work_departure >= datetime.datetime.combine(date_epoch, now.time()) + datetime.timedelta(minutes=25),
-				models.User.timeline_work_departure < datetime.datetime.combine(date_epoch, now.time()) + datetime.timedelta(minutes=30)
+				models.User.timeline_work_departure >= datetime.datetime.combine(date_epoch, (now + datetime.timedelta(minutes=25)).time()),
+				models.User.timeline_work_departure < datetime.datetime.combine(date_epoch, (now + datetime.timedelta(minutes=30)).time())
 			)
 		)
 	)
@@ -276,7 +265,7 @@ def task_run_pins():
 					directions = parse_directions(directions_json)
 					
 					# Update user stats
-					user.trip_home_work_mean = (user.trip_home_work_mean * user.trip_home_work_count + directions.duration_traffic) / (user.trip_home_work_count + 1)
+					user.trip_home_work_mean = (user.trip_home_work_mean * user.trip_home_work_count + directions['duration_traffic']) / (user.trip_home_work_count + 1)
 					user.trip_home_work_count += 1
 					user.timeline_pins_sent += 1
 					user.put()
@@ -284,11 +273,12 @@ def task_run_pins():
 					# Stop here if this is the first home -> work trip
 					# Because user.trip_home_work_mean was initialized as 0, this pin would likely be pushed to the past
 					if user.trip_home_work_count == 1:
+						logging.debug("This is the first home -> work pin for account {}, user stats are now initialized. This pin is being dropped, but subsequent pins will be sent.".format(user.key.id()))
 						continue
 					
 					# Calculate departure/arrival times
 					timeline_work_timezone = pytz.timezone(user.timeline_work_timezone)
-					timeline_home_departure_utc = pytz.utc.localize(datetime.datetime.combine(now.date(), (user.timeline_work_arrival - datetime.timedelta(seconds = directions.duration_traffic)).time()))
+					timeline_home_departure_utc = pytz.utc.localize(datetime.datetime.combine(now.date(), (user.timeline_work_arrival - datetime.timedelta(seconds = directions['duration_traffic'])).time()))
 					timeline_home_departure_local = timeline_work_timezone.normalize(timeline_home_departure_utc.astimezone(timeline_work_timezone))
 					timeline_home_departure_string = timeline_home_departure_local.strftime('%H:%M')
 					timeline_work_arrival_utc = pytz.utc.localize(datetime.datetime.combine(now.date(), user.timeline_work_arrival.time()))
@@ -297,10 +287,10 @@ def task_run_pins():
 					
 					# Push pin
 					id = "{}-{}".format(user.key.id(), user.timeline_pins_sent)
-					if int(round(directions.duration_delay / 60)) == 0:
+					if int(round(directions['duration_delay'] / 60)) == 0:
 						duration_delay_label_minutes = "minutes"
 						duration_delay_label_cause = "thanks to"
-					elif int(round(directions.duration_delay / 60)) == 1:
+					elif int(round(directions['duration_delay'] / 60)) == 1:
 						duration_delay_label_minutes = "minute"
 						duration_delay_label_cause = "due to"
 					else:
@@ -309,16 +299,16 @@ def task_run_pins():
 					pin = dict(
 						id = id,
 						time = timeline_home_departure_utc.isoformat(),
-						duration = int(round(directions.duration_traffic / 60)),
+						duration = int(round(directions['duration_traffic'] / 60)),
 						layout = dict(
 							type = "sportsPin",
 							title = "Home > work",
-							subtitle = "Via {}".format(directions.via),
+							subtitle = "Via {}".format(directions['via']),
 							tinyIcon = "system://images/CAR_RENTAL",
 							largeIcon = "system://images/CAR_RENTAL",
 							primaryColor = "white",
 							secondaryColor = "white",
-							backgroundColor = directions.conditions_color,
+							backgroundColor = directions['conditions_color'],
 							headings = [
 								"Route",
 								"Travel time"
@@ -330,8 +320,8 @@ def task_run_pins():
 							lastUpdated = now.isoformat(),
 							nameAway = "Total",
 							nameHome = "Delay",
-							scoreAway = "{}".format(int(round(directions.duration_traffic / 60))),
-							scoreHome = "{}".format(int(round(directions.duration_delay / 60))),
+							scoreAway = "{}".format(int(round(directions['duration_traffic'] / 60))),
+							scoreHome = "{}".format(int(round(directions['duration_delay'] / 60))),
 							sportsGameState = "in-game"
 						),
 						reminders = [
@@ -340,7 +330,7 @@ def task_run_pins():
 								layout = dict(
 									type = "genericReminder",
 									title = "Leave for work",
-									body = "Drive via {} to arrive by {}, with {} {} of delay {} {} traffic.".format(directions.via, timeline_work_arrival_string, int(round(directions.duration_delay / 60)), duration_delay_label_minutes, duration_delay_label_cause, directions.conditions_text),
+									body = "Drive via {} to arrive by {}, with {} {} of delay {} {} traffic.".format(directions['via'], timeline_work_arrival_string, int(round(directions['duration_delay'] / 60)), duration_delay_label_minutes, duration_delay_label_cause, directions['conditions_text']),
 									tinyIcon = "system://images/CAR_RENTAL"
 								)
 							)
@@ -378,7 +368,7 @@ def task_run_pins():
 					directions = parse_directions(directions_json)
 					
 					# Update user stats
-					user.trip_work_home_mean = (user.trip_work_home_mean * user.trip_work_home_count + directions.duration_traffic) / (user.trip_work_home_count + 1)
+					user.trip_work_home_mean = (user.trip_work_home_mean * user.trip_work_home_count + directions['duration_traffic']) / (user.trip_work_home_count + 1)
 					user.trip_work_home_count += 1
 					user.timeline_pins_sent += 1
 					user.put()
@@ -388,16 +378,16 @@ def task_run_pins():
 					timeline_work_departure_utc = pytz.utc.localize(datetime.datetime.combine(now.date(), user.timeline_work_departure.time()))
 					timeline_work_departure_local = timeline_work_timezone.normalize(timeline_work_departure_utc.astimezone(timeline_work_timezone))
 					timeline_work_departure_string = timeline_work_departure_local.strftime('%H:%M')
-					timeline_home_arrival_utc = pytz.utc.localize(datetime.datetime.combine(now.date(), (user.timeline_work_departure + datetime.timedelta(seconds = directions.duration_traffic)).time()))
+					timeline_home_arrival_utc = pytz.utc.localize(datetime.datetime.combine(now.date(), (user.timeline_work_departure + datetime.timedelta(seconds = directions['duration_traffic'])).time()))
 					timeline_home_arrival_local = timeline_work_timezone.normalize(timeline_home_arrival_utc.astimezone(timeline_work_timezone))
 					timeline_home_arrival_string = timeline_home_arrival_local.strftime('%H:%M')
 					
 					# Push pin
 					id = "{}-{}".format(user.key.id(), user.timeline_pins_sent)
-					if int(round(directions.duration_delay / 60)) == 0:
+					if int(round(directions['duration_delay'] / 60)) == 0:
 						duration_delay_label_minutes = "minutes"
 						duration_delay_label_cause = "thanks to"
-					elif int(round(directions.duration_delay / 60)) == 1:
+					elif int(round(directions['duration_delay'] / 60)) == 1:
 						duration_delay_label_minutes = "minute"
 						duration_delay_label_cause = "due to"
 					else:
@@ -406,16 +396,16 @@ def task_run_pins():
 					pin = dict(
 						id = id,
 						time = timeline_work_departure_utc.isoformat(),
-						duration = int(round(directions.duration_traffic / 60)),
+						duration = int(round(directions['duration_traffic'] / 60)),
 						layout = dict(
 							type = "sportsPin",
 							title = "Work > home",
-							subtitle = "Via {}".format(directions.via),
+							subtitle = "Via {}".format(directions['via']),
 							tinyIcon = "system://images/CAR_RENTAL",
 							largeIcon = "system://images/CAR_RENTAL",
 							primaryColor = "white",
 							secondaryColor = "white",
-							backgroundColor = directions.conditions_color,
+							backgroundColor = directions['conditions_color'],
 							headings = [
 								"Route",
 								"Travel time"
@@ -427,8 +417,8 @@ def task_run_pins():
 							lastUpdated = now.isoformat(),
 							nameAway = "Total",
 							nameHome = "Delay",
-							scoreAway = "{}".format(int(round(directions.duration_traffic / 60))),
-							scoreHome = "{}".format(int(round(directions.duration_delay / 60))),
+							scoreAway = "{}".format(int(round(directions['duration_traffic'] / 60))),
+							scoreHome = "{}".format(int(round(directions['duration_delay'] / 60))),
 							sportsGameState = "in-game"
 						),
 						reminders = [
@@ -437,7 +427,7 @@ def task_run_pins():
 								layout = dict(
 									type = "genericReminder",
 									title = "Your drive home",
-									body = "Drive via {} to arrive by {}, with {} {} of delay {} {} traffic.".format(directions.via, timeline_home_arrival_string, int(round(directions.duration_delay / 60)), duration_delay_label_minutes, duration_delay_label_cause, directions.conditions_text),
+									body = "Drive via {} to arrive by {}, with {} {} of delay {} {} traffic.".format(directions['via'], timeline_home_arrival_string, int(round(directions['duration_delay'] / 60)), duration_delay_label_minutes, duration_delay_label_cause, directions['conditions_text']),
 									tinyIcon = "system://images/CAR_RENTAL"
 								)
 							)
