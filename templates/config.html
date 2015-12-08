@@ -60,7 +60,7 @@
 		<div class="item-container-content">
 			{% if prefill.tester %}
 			<div class="item">
-				<strong>Awesome, you're in the closed beta!</strong> You've been randomly selected for a beta test of Commute's Pebble timeline integration. Hope you like it! You can send any feedback to <a href="mailto:dries@nexworx.com">dries@nexworx.com</a>. Enjoy!
+				<strong>Awesome, you're in the closed beta!</strong> You've been randomly selected for a beta test of Commute's Pebble timeline integration. Hope you like it! You can send any feedback to <a href="mailto:dries@nexworx.com">dries@nexworx.com</a>.
 			</div>
 			<label class="item item-subtitle-wrapper">
 				Get traffic on Pebble timeline
@@ -80,6 +80,11 @@
 				Leave work at
 				<input type="time" class="item-time" id="timeline_work_departure" value="{{ prefill.timeline_work_departure }}">
 			</label>
+			{% if prefill.tester %}
+			<div class="item">
+				<strong>Quick note:</strong> when you first enable this or update your settings later, we first have to collect some data about traffic conditions around your commute time. This means you won't get a timeline pin for your first drive from home to work.
+			</div>
+			{% endif %}
 		</div>
 		<div class="item-container-footer">
 			Traffic info is always an estimate! Always allow time for unforeseen circumstances on the road.

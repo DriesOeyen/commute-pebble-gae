@@ -226,29 +226,136 @@ def get_directions(token_account):
 
 @app.route('/tasks/pins')
 def task_run_pins():
+	# Get users of interest: pick and run a query based on the time of day
+	# 		Legend for schematic descriptions:
+	# 		00:00 ----x----x---- 23:59 (timeline doesn't take date into account)
+	# 		a = lower boundary of interest
+	# 		b = upper boundary of interest
+	# 		- = timespan that's not affected by this part of the query
+	# 		* = timespan that's affected by this part of the query
 	now = datetime.datetime.utcnow()
-	users = models.User.query(
-		ndb.OR(
-			ndb.AND(
-				models.User.tester == True, # TODO remove testers filter
-				models.User.timeline_enabled == True,
-				models.User.timeline_work_arrival >= datetime.datetime.combine(date_epoch, (now + datetime.timedelta(minutes=25)).time()),
-				models.User.timeline_work_arrival < datetime.datetime.combine(date_epoch, (now + datetime.timedelta(hours=4)).time())
-			),
-			ndb.AND(
-				models.User.tester == True, # TODO remove testers filter
-				models.User.timeline_enabled == True,
-				models.User.timeline_work_departure >= datetime.datetime.combine(date_epoch, (now + datetime.timedelta(minutes=25)).time()),
-				models.User.timeline_work_departure < datetime.datetime.combine(date_epoch, (now + datetime.timedelta(minutes=30)).time())
+	bound_25_min = datetime.datetime.combine(date_epoch, (now + datetime.timedelta(minutes=25)).time())
+	bound_30_min = datetime.datetime.combine(date_epoch, (now + datetime.timedelta(minutes=30)).time())
+	bound_55_min = datetime.datetime.combine(date_epoch, (now + datetime.timedelta(minutes=55)).time())
+	bound_4_hour = datetime.datetime.combine(date_epoch, (now + datetime.timedelta(hours=4)).time())
+	if bound_4_hour > bound_55_min and bound_30_min > bound_25_min:
+		users = models.User.query(
+			ndb.OR(
+				# Check if work arrival is within bounds of interest
+				# ----a****b----
+				ndb.AND(
+					models.User.tester == True, # TODO remove testers filter
+					models.User.timeline_enabled == True,
+					models.User.timeline_work_arrival >= bound_55_min,
+					models.User.timeline_work_arrival <= bound_4_hour
+				),
+				
+				# Check if work departure is within bounds of interest
+				# ----a****b----
+				ndb.AND(
+					models.User.tester == True, # TODO remove testers filter
+					models.User.timeline_enabled == True,
+					models.User.timeline_work_departure >= bound_25_min,
+					models.User.timeline_work_departure <= bound_30_min
+				)
 			)
 		)
-	)
+	elif bound_4_hour > bound_55_min and bound_30_min < bound_25_min:
+		users = models.User.query(
+			ndb.OR(
+				# Check if work arrival is within bounds of interest
+				# ----a****b----
+				ndb.AND(
+					models.User.tester == True, # TODO remove testers filter
+					models.User.timeline_enabled == True,
+					models.User.timeline_work_arrival >= bound_55_min,
+					models.User.timeline_work_arrival <= bound_4_hour
+				),
+				
+				# Check if work departure is within bounds of interest
+				# ----b----a****
+				ndb.AND(
+					models.User.tester == True, # TODO remove testers filter
+					models.User.timeline_enabled == True,
+					models.User.timeline_work_departure >= bound_25_min
+				),
+				# ****b----a----
+				ndb.AND(
+					models.User.tester == True, # TODO remove testers filter
+					models.User.timeline_enabled == True,
+					models.User.timeline_work_departure <= bound_30_min
+				)
+			)
+		)
+	elif bound_4_hour < bound_55_min and bound_30_min > bound_25_min:
+		users = models.User.query(
+			ndb.OR(
+				# Check if work arrival is within bounds of interest
+				# ----b----a****
+				ndb.AND(
+					models.User.tester == True, # TODO remove testers filter
+					models.User.timeline_enabled == True,
+					models.User.timeline_work_arrival >= bound_55_min
+				),
+				# ****b----a----
+				ndb.AND(
+					models.User.tester == True, # TODO remove testers filter
+					models.User.timeline_enabled == True,
+					models.User.timeline_work_arrival <= bound_4_hour
+				),
+				
+				# Check if work departure is within bounds of interest
+				# ----a****b----
+				ndb.AND(
+					models.User.tester == True, # TODO remove testers filter
+					models.User.timeline_enabled == True,
+					models.User.timeline_work_departure >= bound_25_min,
+					models.User.timeline_work_departure <= bound_30_min
+				)
+			)
+		)
+	elif bound_4_hour < bound_55_min and bound_30_min < bound_25_min:
+		users = models.User.query(
+			ndb.OR(
+				# Check if work arrival is within bounds of interest
+				# ----b----a****
+				ndb.AND(
+					models.User.tester == True, # TODO remove testers filter
+					models.User.timeline_enabled == True,
+					models.User.timeline_work_arrival >= bound_55_min
+				),
+				# ****b----a----
+				ndb.AND(
+					models.User.tester == True, # TODO remove testers filter
+					models.User.timeline_enabled == True,
+					models.User.timeline_work_arrival <= bound_4_hour
+				),
+				
+				# Check if work departure is within bounds of interest
+				# ----b----a****
+				ndb.AND(
+					models.User.tester == True, # TODO remove testers filter
+					models.User.timeline_enabled == True,
+					models.User.timeline_work_departure >= bound_25_min
+				),
+				# ****b----a----
+				ndb.AND(
+					models.User.tester == True, # TODO remove testers filter
+					models.User.timeline_enabled == True,
+					models.User.timeline_work_departure <= bound_30_min
+				)
+			)
+		)
+	else:
+		return 500, ""
+	
+	# Loop through users of interest, push pin if necessary
 	for user in users:
 		if user.tester and user.token_timeline != "": # TODO remove testers check
 			logging.debug("Evaluating account {}".format(user.key.id()))
 			
 			# Calculate (estimated) departure time ("T")
-			t_home_work = user.timeline_work_arrival - datetime.timedelta(seconds = user.trip_home_work_mean + 3600)
+			t_home_work = user.timeline_work_arrival - datetime.timedelta(seconds = user.trip_home_work_mean + 1800)
 			t_work_home = user.timeline_work_departure
 			
 			# Calculate seconds until (estimated) departure time ("T-minus")
