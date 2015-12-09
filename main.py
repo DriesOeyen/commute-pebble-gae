@@ -354,6 +354,13 @@ def task_run_pins():
 		if user.tester and user.token_timeline != "": # TODO remove testers check
 			logging.debug("Evaluating account {}".format(user.key.id()))
 			
+			# Skip this user if it's a weekend in their timezone
+			timeline_work_timezone = pytz.timezone(user.timeline_work_timezone)
+			now_utc = pytz.utc.localize(now)
+			now_local = timeline_work_timezone.normalize(now_utc.astimezone(timeline_work_timezone))
+			if now_local.isoweekday() == 6 or now_local.isoweekday() == 7:
+				continue
+			
 			# Calculate (estimated) departure time ("T")
 			t_home_work = user.timeline_work_arrival - datetime.timedelta(seconds = user.trip_home_work_mean + 1800)
 			t_work_home = user.timeline_work_departure
@@ -384,7 +391,6 @@ def task_run_pins():
 						continue
 					
 					# Calculate departure/arrival times
-					timeline_work_timezone = pytz.timezone(user.timeline_work_timezone)
 					timeline_home_departure_utc = pytz.utc.localize(datetime.datetime.combine(now.date(), (user.timeline_work_arrival - datetime.timedelta(seconds = directions['duration_traffic'])).time()))
 					timeline_home_departure_local = timeline_work_timezone.normalize(timeline_home_departure_utc.astimezone(timeline_work_timezone))
 					timeline_home_departure_string = timeline_home_departure_local.strftime('%H:%M')
@@ -481,7 +487,6 @@ def task_run_pins():
 					user.put()
 					
 					# Calculate departure/arrival times
-					timeline_work_timezone = pytz.timezone(user.timeline_work_timezone)
 					timeline_work_departure_utc = pytz.utc.localize(datetime.datetime.combine(now.date(), user.timeline_work_departure.time()))
 					timeline_work_departure_local = timeline_work_timezone.normalize(timeline_work_departure_utc.astimezone(timeline_work_timezone))
 					timeline_work_departure_string = timeline_work_departure_local.strftime('%H:%M')
