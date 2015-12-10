@@ -416,7 +416,7 @@ def task_run_pins():
 						layout = dict(
 							type = "sportsPin",
 							title = "Home > work",
-							subtitle = "Via {}".format(directions['via']),
+							subtitle = u"Via {}".format(directions['via']),
 							tinyIcon = "system://images/CAR_RENTAL",
 							largeIcon = "system://images/CAR_RENTAL",
 							primaryColor = "white",
@@ -443,7 +443,7 @@ def task_run_pins():
 								layout = dict(
 									type = "genericReminder",
 									title = "Leave for work",
-									body = "Drive via {} to arrive by {}, with {} {} of delay {} {} traffic.".format(directions['via'], timeline_work_arrival_string, int(round(directions['duration_delay'] / 60)), duration_delay_label_minutes, duration_delay_label_cause, directions['conditions_text']),
+									body = u"Drive via {} to arrive by {}, with {} {} of delay {} {} traffic.".format(directions['via'], timeline_work_arrival_string, int(round(directions['duration_delay'] / 60)), duration_delay_label_minutes, duration_delay_label_cause, directions['conditions_text']),
 									tinyIcon = "system://images/CAR_RENTAL"
 								)
 							)
@@ -512,7 +512,7 @@ def task_run_pins():
 						layout = dict(
 							type = "sportsPin",
 							title = "Work > home",
-							subtitle = "Via {}".format(directions['via']),
+							subtitle = u"Via {}".format(directions['via']),
 							tinyIcon = "system://images/CAR_RENTAL",
 							largeIcon = "system://images/CAR_RENTAL",
 							primaryColor = "white",
@@ -539,7 +539,7 @@ def task_run_pins():
 								layout = dict(
 									type = "genericReminder",
 									title = "Your drive home",
-									body = "Drive via {} to arrive by {}, with {} {} of delay {} {} traffic.".format(directions['via'], timeline_home_arrival_string, int(round(directions['duration_delay'] / 60)), duration_delay_label_minutes, duration_delay_label_cause, directions['conditions_text']),
+									body = u"Drive via {} to arrive by {}, with {} {} of delay {} {} traffic.".format(directions['via'], timeline_home_arrival_string, int(round(directions['duration_delay'] / 60)), duration_delay_label_minutes, duration_delay_label_cause, directions['conditions_text']),
 									tinyIcon = "system://images/CAR_RENTAL"
 								)
 							)
