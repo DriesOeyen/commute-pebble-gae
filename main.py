@@ -163,7 +163,10 @@ def fetch_directions(user, request_orig, request_dest, request_coord = ""):
 	
 	try:
 		return urllib2.urlopen("{}/directions/json?{}".format(google_maps_base_url, urllib.urlencode(data_params))).read()
-	except (urllib2.URLError, urllib2.HTTPError):
+	except urllib2.HTTPError, e:
+		logging.error("Error while fetching directions. HTTP status: {} / Request: {}".format(e.code, data_params))
+		raise
+	except:
 		logging.error("Error while fetching directions. Request: {}".format(data_params))
 		raise
 
@@ -470,6 +473,8 @@ def task_run_pins():
 						logging.warning("Timeline token {} for account {} has been invalidated, removing...".format(user.token_timeline, user.key.id()))
 						user.token_timeline = ""
 						user.put()
+					else:
+						logging.error("Error pushing pin for account {}: HTTP status {}".format(user.key.id(), e.code))
 				except:
 					logging.error("Error pushing pin for account {}".format(user.key.id()))
 			# Work -> home trip
@@ -566,6 +571,8 @@ def task_run_pins():
 						logging.warning("Timeline token {} for account {} has been invalidated, removing...".format(user.token_timeline, user.key.id()))
 						user.token_timeline = ""
 						user.put()
+					else:
+						logging.error("Error pushing pin for account {}: HTTP status {}".format(user.key.id(), e.code))
 				except:
 					logging.error("Error pushing pin for account {}".format(user.key.id()))
 	return "", 200
