@@ -6,6 +6,7 @@ import json
 import logging
 import math
 import pytz
+import random
 import urllib
 import urllib2
 from google.appengine.ext import ndb
@@ -567,4 +568,16 @@ def task_run_pins():
 						user.put()
 				except:
 					logging.error("Error pushing pin for account {}".format(user.key.id()))
+	return "", 200
+
+
+# TODO temporary function, adds users to the testing group
+@app.route('/testers/add/<percentage>')
+def add_testers(percentage):
+	chance = float(percentage)/100
+	users = models.User.query(models.User.tester == False)
+	for user in users:
+		if random.random() < chance
+			user.tester = True
+			user.put()
 	return "", 200
