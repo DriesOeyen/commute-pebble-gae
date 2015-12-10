@@ -577,7 +577,7 @@ def add_testers(percentage):
 	chance = float(percentage)/100
 	users = models.User.query(models.User.tester == False)
 	for user in users:
-		if random.random() < chance
+		if random.random() < chance:
 			user.tester = True
 			user.put()
 	return "", 200
