@@ -174,32 +174,39 @@ def fetch_directions(user, request_orig, request_dest, request_coord = ""):
 def parse_directions(directions_json):
 	# Parse JSON
 	directions = json.loads(directions_json)
-	duration_normal = directions['routes'][0]['legs'][0]['duration']['value']
-	duration_traffic = directions['routes'][0]['legs'][0]['duration_in_traffic']['value']
-	duration_difference = duration_traffic - duration_normal
-	if duration_difference < 0:
-		duration_difference = 0
-	delay_ratio = float(duration_difference) / duration_normal
-	if delay_ratio > 0.25:
-		conditions_color = "darkcandyapplered"
-		conditions_text = "heavy"
-	elif delay_ratio > 0.1:
-		conditions_color = "orange"
-		conditions_text = "moderate"
+	status = directions['status']
+	if status == "OK":
+		duration_normal = directions['routes'][0]['legs'][0]['duration']['value']
+		duration_traffic = directions['routes'][0]['legs'][0]['duration_in_traffic']['value']
+		duration_difference = duration_traffic - duration_normal
+		if duration_difference < 0:
+			duration_difference = 0
+		delay_ratio = float(duration_difference) / duration_normal
+		if delay_ratio > 0.25:
+			conditions_color = "darkcandyapplered"
+			conditions_text = "heavy"
+		elif delay_ratio > 0.1:
+			conditions_color = "orange"
+			conditions_text = "moderate"
+		else:
+			conditions_color = "darkgreen"
+			conditions_text = "light"
+		via = directions['routes'][0]['summary']
+		
+		# Return interesting data as dict
+		directions_dict = dict(
+			status = status,
+			duration_normal = duration_normal,
+			duration_traffic = duration_traffic,
+			duration_delay = duration_difference,
+			conditions_color = conditions_color,
+			conditions_text = conditions_text,
+			via = via
+		)
 	else:
-		conditions_color = "darkgreen"
-		conditions_text = "light"
-	via = directions['routes'][0]['summary']
-	
-	# Return interesting data as dict
-	directions_dict = dict(
-		duration_normal = duration_normal,
-		duration_traffic = duration_traffic,
-		duration_delay = duration_difference,
-		conditions_color = conditions_color,
-		conditions_text = conditions_text,
-		via = via
-	)
+		directions_dict = dict(
+			status = status
+		)
 	return directions_dict
 
 
@@ -382,6 +389,15 @@ def task_run_pins():
 					directions_json = fetch_directions(user, REQUEST_TYPE_HOME, REQUEST_TYPE_WORK)
 					directions = parse_directions(directions_json)
 					
+					# Handle Google Maps errors, shut off timeline if user intervention is required
+					if directions['status'] != "OK":
+						logging.warning("Google Maps error for account {}: {}".format(user.key.id(), directions['status']))
+						if directions['status'] == "NOT_FOUND" or directions['status'] == "ZERO_RESULTS":
+							logging.warning("Disabling timeline for account {}".format(user.key.id()))
+							user.timeline_enabled = False
+							user.put()
+						continue
+					
 					# Update user stats (part 1 of 2)
 					user.trip_home_work_mean = (user.trip_home_work_mean * user.trip_home_work_count + directions['duration_traffic']) / (user.trip_home_work_count + 1)
 					user.trip_home_work_count += 1
@@ -488,6 +504,15 @@ def task_run_pins():
 					# Fetch directions, parse results
 					directions_json = fetch_directions(user, REQUEST_TYPE_WORK, REQUEST_TYPE_HOME)
 					directions = parse_directions(directions_json)
+					
+					# Handle Google Maps errors, shut off timeline if user intervention is required
+					if directions['status'] != "OK":
+						logging.warning("Google Maps error for account {}: {}".format(user.key.id(), directions['status']))
+						if directions['status'] == "NOT_FOUND" or directions['status'] == "ZERO_RESULTS":
+							logging.warning("Disabling timeline setting for account {}".format(user.key.id()))
+							user.timeline_enabled = False
+							user.put()
+						continue
 					
 					# Update user stats
 					user.trip_work_home_mean = (user.trip_work_home_mean * user.trip_work_home_count + directions['duration_traffic']) / (user.trip_work_home_count + 1)
