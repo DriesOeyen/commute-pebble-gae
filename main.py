@@ -450,8 +450,8 @@ def task_run_pins():
 						],
 						actions = [
 							dict(
-								type = 'openWatchApp',
-								title = 'Open Commute',
+								type = "openWatchApp",
+								title = "Open Commute",
 								launchCode = PAGE_HOME_WORK
 							)
 						]
@@ -459,7 +459,7 @@ def task_run_pins():
 					logging.info(json.dumps(pin)); # TODO remove this
 					opener = urllib2.build_opener(urllib2.HTTPHandler)
 					request = urllib2.Request("{}/user/pins/{}".format(pebble_timeline_base_url, id), data = json.dumps(pin))
-					request.add_header('Content-Type', 'application/json')
+					request.add_header('Content-Type', "application/json")
 					request.add_header('X-User-Token', user.token_timeline)
 					request.get_method = lambda: 'PUT'
 					url = opener.open(request)
@@ -469,8 +469,8 @@ def task_run_pins():
 						logging.warning("Timeline token {} for account {} has been invalidated, removing...".format(user.token_timeline, user.key.id()))
 						user.token_timeline = ""
 						user.put()
-				#except: # TODO uncomment so an exception doesn't interrupt the cronjob
-				#	logging.error("Error pushing pin for account {}".format(user.key.id()))
+				except:
+					logging.error("Error pushing pin for account {}".format(user.key.id()))
 			# Work -> home trip
 			if t_minus_work_home >= 25*60 and t_minus_work_home < 30*60:
 				try:
@@ -546,8 +546,8 @@ def task_run_pins():
 						],
 						actions = [
 							dict(
-								type = 'openWatchApp',
-								title = 'Open Commute',
+								type = "openWatchApp",
+								title = "Open Commute",
 								launchCode = PAGE_WORK_HOME
 							)
 						]
@@ -555,7 +555,7 @@ def task_run_pins():
 					logging.info(json.dumps(pin)); # TODO remove this
 					opener = urllib2.build_opener(urllib2.HTTPHandler)
 					request = urllib2.Request("{}/user/pins/{}".format(pebble_timeline_base_url, id), data = json.dumps(pin))
-					request.add_header('Content-Type', 'application/json')
+					request.add_header('Content-Type', "application/json")
 					request.add_header('X-User-Token', user.token_timeline)
 					request.get_method = lambda: 'PUT'
 					url = opener.open(request)
@@ -565,6 +565,6 @@ def task_run_pins():
 						logging.warning("Timeline token {} for account {} has been invalidated, removing...".format(user.token_timeline, user.key.id()))
 						user.token_timeline = ""
 						user.put()
-				#except: # TODO uncomment so an exception doesn't interrupt the cronjob
-				#	logging.error("Error pushing pin for account {}".format(user.key.id()))
+				except:
+					logging.error("Error pushing pin for account {}".format(user.key.id()))
 	return "", 200
