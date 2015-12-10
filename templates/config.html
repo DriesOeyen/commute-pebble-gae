@@ -70,6 +70,7 @@
 			{% else %}
 			<div class="item">
 				<strong>Coming soon:</strong> have your watch tell you when to leave for work! We'll soon push traffic info straight to your Pebble's timeline.
+				<input type="checkbox" style="display:none;" id="timeline_enabled" {% if prefill.timeline_enabled %} checked {% endif %}>
 			</div>
 			{% endif %}
 			<label class="item">
