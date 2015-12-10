@@ -101,12 +101,14 @@ def put_user(token_account):
 	timeline_work_arrival_m = int(flask.request.form['timeline_work_arrival_m'])
 	timeline_work_arrival = datetime.datetime.combine(date_epoch, datetime.time(timeline_work_arrival_h, timeline_work_arrival_m))
 	timeline_work_arrival_local = timeline_work_timezone.localize(timeline_work_arrival)
-	timeline_work_arrival_utc = pytz.utc.normalize(timeline_work_arrival_local.astimezone(pytz.utc))
+	timeline_work_arrival_utc_temp = pytz.utc.normalize(timeline_work_arrival_local.astimezone(pytz.utc))
+	timeline_work_arrival_utc = timeline_work_arrival_utc_temp.replace(date_epoch.year, date_epoch.month, date_epoch.day) # Make sure the UTC date is still epoch day
 	timeline_work_departure_h = int(flask.request.form['timeline_work_departure_h'])
 	timeline_work_departure_m = int(flask.request.form['timeline_work_departure_m'])
 	timeline_work_departure = datetime.datetime.combine(date_epoch, datetime.time(timeline_work_departure_h, timeline_work_departure_m))
 	timeline_work_departure_local = timeline_work_timezone.localize(timeline_work_departure)
-	timeline_work_departure_utc = pytz.utc.normalize(timeline_work_departure_local.astimezone(pytz.utc))
+	timeline_work_departure_utc_temp = pytz.utc.normalize(timeline_work_departure_local.astimezone(pytz.utc))
+	timeline_work_departure_utc = timeline_work_departure_utc_temp.replace(date_epoch.year, date_epoch.month, date_epoch.day) # Make sure the UTC date is still epoch day
 	
 	# Change and persist information
 	user.address_home = flask.request.form['address_home']
@@ -393,7 +395,7 @@ def task_run_pins():
 					if directions['status'] != "OK":
 						logging.warning("Google Maps error for account {}: {}".format(user.key.id(), directions['status']))
 						if directions['status'] == "NOT_FOUND" or directions['status'] == "ZERO_RESULTS":
-							logging.warning("Disabling timeline for account {}".format(user.key.id()))
+							logging.warning("Disabling timeline setting for account {}".format(user.key.id()))
 							user.timeline_enabled = False
 							user.put()
 						continue
