@@ -12,6 +12,7 @@ class User(ndb.Model):
 	
 	timeline_enabled = ndb.BooleanProperty(default=True)
 	timeline_pins_sent = ndb.IntegerProperty(default=0)
+	timeline_onboarding_sent = ndb.BooleanProperty(default=False)
 	timeline_work_arrival = ndb.DateTimeProperty()
 	timeline_work_departure = ndb.DateTimeProperty()
 	timeline_work_timezone = ndb.StringProperty()

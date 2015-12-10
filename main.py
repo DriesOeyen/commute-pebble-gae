@@ -423,7 +423,7 @@ def task_run_pins():
 					timeline_work_arrival_local = timeline_work_timezone.normalize(timeline_work_arrival_utc.astimezone(timeline_work_timezone))
 					timeline_work_arrival_string = timeline_work_arrival_local.strftime('%H:%M')
 					
-					# Push pin
+					# Build pin
 					id = "{}-{}".format(user.key.id(), user.timeline_pins_sent)
 					if int(round(directions['duration_delay'] / 60)) == 0:
 						duration_delay_label_minutes = "minutes"
@@ -481,6 +481,8 @@ def task_run_pins():
 							)
 						]
 					)
+					
+					# Send pin
 					logging.info(json.dumps(pin)); # TODO remove this
 					opener = urllib2.build_opener(urllib2.HTTPHandler)
 					request = urllib2.Request("{}/user/pins/{}".format(pebble_timeline_base_url, id), data = json.dumps(pin))
@@ -530,7 +532,7 @@ def task_run_pins():
 					timeline_home_arrival_local = timeline_work_timezone.normalize(timeline_home_arrival_utc.astimezone(timeline_work_timezone))
 					timeline_home_arrival_string = timeline_home_arrival_local.strftime('%H:%M')
 					
-					# Push pin
+					# Build pin
 					id = "{}-{}".format(user.key.id(), user.timeline_pins_sent)
 					if int(round(directions['duration_delay'] / 60)) == 0:
 						duration_delay_label_minutes = "minutes"
@@ -588,6 +590,27 @@ def task_run_pins():
 							)
 						]
 					)
+					
+					# Add onboarding notification if this is the user's first visible pin
+					if user.timeline_onboarding_sent == False:
+						if user.trip_home_work_count == 0:
+							notification_body = "You'll get timeline pins and reminders telling you when to leave for work to arrive on time, or how long it'll take to get back home. Your first pin is available now. Quick note: you won't get a pin for your first trip to work, since Commute needs to collect some typical traffic data first. Enjoy!"
+						else:
+							notification_body = "You'll get timeline pins and reminders telling you when to leave for work to arrive on time, or how long it'll take to get back home. Your first pin is available now. Enjoy!"
+						pin['createNotification'] = dict(
+							layout = dict(
+								type = "genericNotification",
+								title = "Commute is on your timeline!",
+								tinyIcon = "system://images/CAR_RENTAL",
+								body = notification_body,
+								primaryColor = "black",
+								backgroundColor = "orange"
+							)
+						)
+						user.timeline_onboarding_sent = True
+						user.put()
+					
+					# Send pin
 					logging.info(json.dumps(pin)); # TODO remove this
 					opener = urllib2.build_opener(urllib2.HTTPHandler)
 					request = urllib2.Request("{}/user/pins/{}".format(pebble_timeline_base_url, id), data = json.dumps(pin))
