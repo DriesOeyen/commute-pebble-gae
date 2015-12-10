@@ -382,17 +382,20 @@ def task_run_pins():
 					directions_json = fetch_directions(user, REQUEST_TYPE_HOME, REQUEST_TYPE_WORK)
 					directions = parse_directions(directions_json)
 					
-					# Update user stats
+					# Update user stats (part 1 of 2)
 					user.trip_home_work_mean = (user.trip_home_work_mean * user.trip_home_work_count + directions['duration_traffic']) / (user.trip_home_work_count + 1)
 					user.trip_home_work_count += 1
-					user.timeline_pins_sent += 1
-					user.put()
 					
 					# Stop here if this is the first home -> work trip
 					# Because user.trip_home_work_mean was initialized as 0, this pin would likely be pushed to the past
 					if user.trip_home_work_count == 1:
 						logging.debug("This is the first home -> work pin for account {}, user stats are now initialized. This pin is being dropped, but subsequent pins will be sent.".format(user.key.id()))
+						user.put()
 						continue
+					
+					# Update user stats (part 2 of 2)
+					user.timeline_pins_sent += 1
+					user.put()
 					
 					# Calculate departure/arrival times
 					timeline_home_departure_utc = pytz.utc.localize(datetime.datetime.combine(now.date(), (user.timeline_work_arrival - datetime.timedelta(seconds = directions['duration_traffic'])).time()))
