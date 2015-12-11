@@ -181,8 +181,10 @@ def parse_directions(directions_json):
 		duration_normal = directions['routes'][0]['legs'][0]['duration']['value']
 		duration_traffic = directions['routes'][0]['legs'][0]['duration_in_traffic']['value']
 		duration_difference = duration_traffic - duration_normal
-		if duration_difference < 0:
+		if duration_difference < 0: # Prevent negative delays
 			duration_difference = 0
+		if duration_normal == 0: # Prevent division by 0
+			duration_normal = 1
 		delay_ratio = float(duration_difference) / duration_normal
 		if delay_ratio > 0.25:
 			conditions_color = "darkcandyapplered"
