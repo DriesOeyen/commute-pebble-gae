@@ -416,12 +416,12 @@ def task_run_pins():
 					user.put()
 					
 					# Calculate departure/arrival times
-					timeline_home_departure_utc = pytz.utc.localize(datetime.datetime.combine(now.date(), (user.timeline_work_arrival - datetime.timedelta(seconds = directions['duration_traffic'])).time()))
-					timeline_home_departure_local = timeline_work_timezone.normalize(timeline_home_departure_utc.astimezone(timeline_work_timezone))
-					timeline_home_departure_string = timeline_home_departure_local.strftime('%H:%M')
 					timeline_work_arrival_utc = pytz.utc.localize(datetime.datetime.combine(now.date(), user.timeline_work_arrival.time()))
 					timeline_work_arrival_local = timeline_work_timezone.normalize(timeline_work_arrival_utc.astimezone(timeline_work_timezone))
 					timeline_work_arrival_string = timeline_work_arrival_local.strftime('%H:%M')
+					timeline_home_departure_utc = timeline_work_arrival_utc - datetime.timedelta(seconds = directions['duration_traffic'])
+					timeline_home_departure_local = timeline_work_timezone.normalize(timeline_home_departure_utc.astimezone(timeline_work_timezone))
+					timeline_home_departure_string = timeline_home_departure_local.strftime('%H:%M')
 					
 					# Build pin
 					id = "{}-{}".format(user.key.id(), user.timeline_pins_sent)
@@ -528,7 +528,7 @@ def task_run_pins():
 					timeline_work_departure_utc = pytz.utc.localize(datetime.datetime.combine(now.date(), user.timeline_work_departure.time()))
 					timeline_work_departure_local = timeline_work_timezone.normalize(timeline_work_departure_utc.astimezone(timeline_work_timezone))
 					timeline_work_departure_string = timeline_work_departure_local.strftime('%H:%M')
-					timeline_home_arrival_utc = pytz.utc.localize(datetime.datetime.combine(now.date(), (user.timeline_work_departure + datetime.timedelta(seconds = directions['duration_traffic'])).time()))
+					timeline_home_arrival_utc = timeline_work_departure_utc + datetime.timedelta(seconds = directions['duration_traffic'])
 					timeline_home_arrival_local = timeline_work_timezone.normalize(timeline_home_arrival_utc.astimezone(timeline_work_timezone))
 					timeline_home_arrival_string = timeline_home_arrival_local.strftime('%H:%M')
 					
