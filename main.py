@@ -416,7 +416,11 @@ def task_run_pins():
 					user.put()
 					
 					# Calculate departure/arrival times
-					timeline_work_arrival_utc = pytz.utc.localize(datetime.datetime.combine(now.date(), user.timeline_work_arrival.time()))
+					if now.time() <= user.timeline_work_arrival.time():
+						timeline_work_arrival_date = now.date()
+					else: # If arrival time is tomorrow, put tomorrow as the date
+						timeline_work_arrival_date = now.date()+1
+					timeline_work_arrival_utc = pytz.utc.localize(datetime.datetime.combine(timeline_work_arrival_date, user.timeline_work_arrival.time()))
 					timeline_work_arrival_local = timeline_work_timezone.normalize(timeline_work_arrival_utc.astimezone(timeline_work_timezone))
 					timeline_work_arrival_string = timeline_work_arrival_local.strftime('%H:%M')
 					timeline_home_departure_utc = timeline_work_arrival_utc - datetime.timedelta(seconds = directions['duration_traffic'])
@@ -525,7 +529,11 @@ def task_run_pins():
 					user.put()
 					
 					# Calculate departure/arrival times
-					timeline_work_departure_utc = pytz.utc.localize(datetime.datetime.combine(now.date(), user.timeline_work_departure.time()))
+					if now.time() <= user.timeline_work_departure.time():
+						timeline_work_departure_date = now.date()
+					else: # If departure time is tomorrow, put tomorrow as the date
+						timeline_work_departure_date = now.date()+1
+					timeline_work_departure_utc = pytz.utc.localize(datetime.datetime.combine(timeline_work_departure_date, user.timeline_work_departure.time()))
 					timeline_work_departure_local = timeline_work_timezone.normalize(timeline_work_departure_utc.astimezone(timeline_work_timezone))
 					timeline_work_departure_string = timeline_work_departure_local.strftime('%H:%M')
 					timeline_home_arrival_utc = timeline_work_departure_utc + datetime.timedelta(seconds = directions['duration_traffic'])
