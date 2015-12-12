@@ -384,8 +384,19 @@ def task_run_pins():
 			t_minus_home_work = (t_home_work - now).seconds # timedelta.seconds ignores difference in date
 			t_minus_work_home = (t_work_home - now).seconds
 			
+			# Calculate how long it has been since the last pins were sent
+			timeline_pins_delta_min = datetime.timedelta(hours=4)
+			if user.timeline_pins_home_work_last == None:
+				timeline_pins_home_work_last_delta = timeline_pins_delta_min
+			else:
+				timeline_pins_home_work_last_delta = now - user.timeline_pins_home_work_last
+			if user.timeline_pins_work_home_last == None:
+				timeline_pins_work_home_last_delta = timeline_pins_delta_min
+			else:
+				timeline_pins_work_home_last_delta = now - user.timeline_pins_work_home_last
+			
 			# Home -> work trip
-			if t_minus_home_work >= 25*60 and t_minus_home_work < 30*60:
+			if t_minus_home_work >= 25*60 and t_minus_home_work < 30*60 and timeline_pins_home_work_last_delta >= timeline_pins_delta_min:
 				try:
 					logging.debug("Pushing home -> work pin for account {}".format(user.key.id()))
 					
@@ -403,6 +414,7 @@ def task_run_pins():
 						continue
 					
 					# Update user stats (part 1 of 2)
+					user.timeline_pins_home_work_last = now
 					user.trip_home_work_mean = (user.trip_home_work_mean * user.trip_home_work_count + directions['duration_traffic']) / (user.trip_home_work_count + 1)
 					user.trip_home_work_count += 1
 					
@@ -507,7 +519,7 @@ def task_run_pins():
 				except:
 					logging.error("Error pushing pin for account {}".format(user.key.id()))
 			# Work -> home trip
-			if t_minus_work_home >= 25*60 and t_minus_work_home < 30*60:
+			if t_minus_work_home >= 25*60 and t_minus_work_home < 30*60 and timeline_pins_work_home_last_delta >= timeline_pins_delta_min:
 				try:
 					logging.debug("Pushing work -> home pin for account {}".format(user.key.id()))
 					
@@ -525,6 +537,7 @@ def task_run_pins():
 						continue
 					
 					# Update user stats
+					user.timeline_pins_work_home_last = now
 					user.trip_work_home_mean = (user.trip_work_home_mean * user.trip_work_home_count + directions['duration_traffic']) / (user.trip_work_home_count + 1)
 					user.trip_work_home_count += 1
 					user.timeline_pins_sent += 1
