@@ -697,8 +697,8 @@
 	},
 "projectAttributes": {
 	"bowerAbbreviatedPath": "static",
-	"displayValue": "commute-pebble",
-	"displayValueWasSetByUser": 0,
+	"displayValue": "commute-pebble-gae",
+	"displayValueWasSetByUser": 1,
 	"iconImageName": "globe_yellow"
 	},
 "projectSettings": {

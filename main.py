@@ -42,7 +42,7 @@ def application_error(e):
 
 @app.route('/config/<token_account>')
 def get_config(token_account):
-	token_timeline = flask.request.args['token_timeline']
+	token_timeline = flask.request.args.get('token_timeline', "")
 	return_to = flask.request.args.get('return_to', "pebblejs://close#")
 	
 	# Fetch user
