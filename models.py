@@ -1,7 +1,7 @@
 from google.appengine.ext import ndb
 
 class User(ndb.Model):
-	token_timeline = ndb.StringProperty()
+	token_timeline = ndb.StringProperty(default="")
 	tester = ndb.BooleanProperty(default=False)
 	
 	address_home = ndb.StringProperty()
