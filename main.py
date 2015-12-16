@@ -42,7 +42,6 @@ def application_error(e):
 
 @app.route('/config/<token_account>')
 def get_config(token_account):
-	token_timeline = flask.request.args.get('token_timeline', "")
 	return_to = flask.request.args.get('return_to', "pebblejs://close#")
 	
 	# Fetch user
@@ -68,7 +67,6 @@ def get_config(token_account):
 	# New or existing user -> Render config page
 	prefill = {
 		'token_account': token_account,
-		'token_timeline': token_timeline,
 		'tester': user.tester,
 		'return_to': return_to,
 		'address_home': user.address_home,
@@ -91,8 +89,7 @@ def put_user(token_account):
 	if user == None:
 		# Create new user
 		user = models.User(
-			id = token_account,
-			token_timeline = flask.request.form['token_timeline']
+			id = token_account
 		)
 	
 	# Parse times
@@ -229,6 +226,7 @@ def get_directions(token_account):
 	
 	# Update timeline token if necessary
 	if token_timeline != "" and token_timeline != user.token_timeline:
+		logging.debug("Persisting new timeline token for user {}: {} (was {})".format(user.key.id(), token_timeline, user.token_timeline))
 		user.token_timeline = token_timeline
 		user.put()
 	

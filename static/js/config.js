@@ -12,7 +12,6 @@ $('.save').on('click', function() {
 		var timeline_work_arrival = $('#timeline_work_arrival').val().split(':');
 		var timeline_work_departure = $('#timeline_work_departure').val().split(':');
 		var data = {
-			'token_timeline': $('#token_timeline').val(),
 			'address_home': $('#address_home').val(),
 			'address_work': $('#address_work').val(),
 			'route_avoid_tolls': $('#route_avoid_tolls').prop('checked'),
