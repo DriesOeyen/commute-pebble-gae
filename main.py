@@ -48,11 +48,14 @@ def get_config(token_account):
 	user = models.User.get_by_id(token_account)
 	if user:
 		# Existing user -> calculate hours
+		now = datetime.datetime.utcnow()
 		timeline_work_timezone = pytz.timezone(user.timeline_work_timezone)
-		timeline_work_arrival_utc = pytz.utc.localize(user.timeline_work_arrival)
+		timeline_work_arrival = datetime.datetime.combine(now.date(), user.timeline_work_arrival.time())
+		timeline_work_arrival_utc = pytz.utc.localize(timeline_work_arrival)
 		timeline_work_arrival_local = timeline_work_timezone.normalize(timeline_work_arrival_utc.astimezone(timeline_work_timezone))
 		timeline_work_arrival_string = timeline_work_arrival_local.strftime('%H:%M')
-		timeline_work_departure_utc = pytz.utc.localize(user.timeline_work_departure)
+		timeline_work_departure = datetime.datetime.combine(now.date(), user.timeline_work_departure.time())
+		timeline_work_departure_utc = pytz.utc.localize(timeline_work_departure)
 		timeline_work_departure_local = timeline_work_timezone.normalize(timeline_work_departure_utc.astimezone(timeline_work_timezone))
 		timeline_work_departure_string = timeline_work_departure_local.strftime('%H:%M')
 	else:
@@ -93,19 +96,20 @@ def put_user(token_account):
 		)
 	
 	# Parse times
+	now = datetime.datetime.utcnow()
 	timeline_work_timezone = pytz.timezone(flask.request.form['timeline_work_timezone'])
 	timeline_work_arrival_h = int(flask.request.form['timeline_work_arrival_h'])
 	timeline_work_arrival_m = int(flask.request.form['timeline_work_arrival_m'])
-	timeline_work_arrival = datetime.datetime.combine(date_epoch, datetime.time(timeline_work_arrival_h, timeline_work_arrival_m))
+	timeline_work_arrival = datetime.datetime.combine(now.date(), datetime.time(timeline_work_arrival_h, timeline_work_arrival_m))
 	timeline_work_arrival_local = timeline_work_timezone.localize(timeline_work_arrival)
 	timeline_work_arrival_utc_temp = pytz.utc.normalize(timeline_work_arrival_local.astimezone(pytz.utc))
-	timeline_work_arrival_utc = timeline_work_arrival_utc_temp.replace(date_epoch.year, date_epoch.month, date_epoch.day) # Make sure the UTC date is still epoch day
+	timeline_work_arrival_utc = timeline_work_arrival_utc_temp.replace(date_epoch.year, date_epoch.month, date_epoch.day) # Make UTC date epoch day
 	timeline_work_departure_h = int(flask.request.form['timeline_work_departure_h'])
 	timeline_work_departure_m = int(flask.request.form['timeline_work_departure_m'])
-	timeline_work_departure = datetime.datetime.combine(date_epoch, datetime.time(timeline_work_departure_h, timeline_work_departure_m))
+	timeline_work_departure = datetime.datetime.combine(now.date(), datetime.time(timeline_work_departure_h, timeline_work_departure_m))
 	timeline_work_departure_local = timeline_work_timezone.localize(timeline_work_departure)
 	timeline_work_departure_utc_temp = pytz.utc.normalize(timeline_work_departure_local.astimezone(pytz.utc))
-	timeline_work_departure_utc = timeline_work_departure_utc_temp.replace(date_epoch.year, date_epoch.month, date_epoch.day) # Make sure the UTC date is still epoch day
+	timeline_work_departure_utc = timeline_work_departure_utc_temp.replace(date_epoch.year, date_epoch.month, date_epoch.day) # Make UTC date epoch day
 	
 	# Change and persist information
 	user.address_home = flask.request.form['address_home']
