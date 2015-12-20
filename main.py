@@ -356,8 +356,6 @@ def task_run_pins():
 	
 	# Loop through users of interest, push pin if necessary
 	for user in users:
-			logging.debug("Evaluating account {}".format(user.key.id()))
-			
 		if user.token_timeline != "":
 			# Skip this user if it's a weekend in their timezone
 			timeline_work_timezone = pytz.timezone(user.timeline_work_timezone)
@@ -491,7 +489,7 @@ def task_run_pins():
 					)
 					
 					# Send pin
-					logging.info(json.dumps(pin)); # TODO remove this
+					logging.debug(json.dumps(pin))
 					opener = urllib2.build_opener(urllib2.HTTPHandler)
 					request = urllib2.Request("{}/user/pins/{}".format(pebble_timeline_base_url, id), data = json.dumps(pin))
 					request.add_header('Content-Type', "application/json")
@@ -624,7 +622,7 @@ def task_run_pins():
 						user.put()
 					
 					# Send pin
-					logging.info(json.dumps(pin)); # TODO remove this
+					logging.debug(json.dumps(pin))
 					opener = urllib2.build_opener(urllib2.HTTPHandler)
 					request = urllib2.Request("{}/user/pins/{}".format(pebble_timeline_base_url, id), data = json.dumps(pin))
 					request.add_header('Content-Type', "application/json")
