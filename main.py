@@ -261,7 +261,6 @@ def task_run_pins():
 				# Check if work arrival is within bounds of interest
 				# ----a****b----
 				ndb.AND(
-					models.User.tester == True, # TODO remove testers filter
 					models.User.timeline_enabled == True,
 					models.User.timeline_work_arrival >= bound_55_min,
 					models.User.timeline_work_arrival <= bound_4_hour
@@ -270,7 +269,6 @@ def task_run_pins():
 				# Check if work departure is within bounds of interest
 				# ----a****b----
 				ndb.AND(
-					models.User.tester == True, # TODO remove testers filter
 					models.User.timeline_enabled == True,
 					models.User.timeline_work_departure >= bound_25_min,
 					models.User.timeline_work_departure <= bound_30_min
@@ -283,7 +281,6 @@ def task_run_pins():
 				# Check if work arrival is within bounds of interest
 				# ----a****b----
 				ndb.AND(
-					models.User.tester == True, # TODO remove testers filter
 					models.User.timeline_enabled == True,
 					models.User.timeline_work_arrival >= bound_55_min,
 					models.User.timeline_work_arrival <= bound_4_hour
@@ -292,13 +289,11 @@ def task_run_pins():
 				# Check if work departure is within bounds of interest
 				# ----b----a****
 				ndb.AND(
-					models.User.tester == True, # TODO remove testers filter
 					models.User.timeline_enabled == True,
 					models.User.timeline_work_departure >= bound_25_min
 				),
 				# ****b----a----
 				ndb.AND(
-					models.User.tester == True, # TODO remove testers filter
 					models.User.timeline_enabled == True,
 					models.User.timeline_work_departure <= bound_30_min
 				)
@@ -310,13 +305,11 @@ def task_run_pins():
 				# Check if work arrival is within bounds of interest
 				# ----b----a****
 				ndb.AND(
-					models.User.tester == True, # TODO remove testers filter
 					models.User.timeline_enabled == True,
 					models.User.timeline_work_arrival >= bound_55_min
 				),
 				# ****b----a----
 				ndb.AND(
-					models.User.tester == True, # TODO remove testers filter
 					models.User.timeline_enabled == True,
 					models.User.timeline_work_arrival <= bound_4_hour
 				),
@@ -324,7 +317,6 @@ def task_run_pins():
 				# Check if work departure is within bounds of interest
 				# ----a****b----
 				ndb.AND(
-					models.User.tester == True, # TODO remove testers filter
 					models.User.timeline_enabled == True,
 					models.User.timeline_work_departure >= bound_25_min,
 					models.User.timeline_work_departure <= bound_30_min
@@ -337,13 +329,11 @@ def task_run_pins():
 				# Check if work arrival is within bounds of interest
 				# ----b----a****
 				ndb.AND(
-					models.User.tester == True, # TODO remove testers filter
 					models.User.timeline_enabled == True,
 					models.User.timeline_work_arrival >= bound_55_min
 				),
 				# ****b----a----
 				ndb.AND(
-					models.User.tester == True, # TODO remove testers filter
 					models.User.timeline_enabled == True,
 					models.User.timeline_work_arrival <= bound_4_hour
 				),
@@ -351,13 +341,11 @@ def task_run_pins():
 				# Check if work departure is within bounds of interest
 				# ----b----a****
 				ndb.AND(
-					models.User.tester == True, # TODO remove testers filter
 					models.User.timeline_enabled == True,
 					models.User.timeline_work_departure >= bound_25_min
 				),
 				# ****b----a----
 				ndb.AND(
-					models.User.tester == True, # TODO remove testers filter
 					models.User.timeline_enabled == True,
 					models.User.timeline_work_departure <= bound_30_min
 				)
@@ -368,9 +356,9 @@ def task_run_pins():
 	
 	# Loop through users of interest, push pin if necessary
 	for user in users:
-		if user.tester and user.token_timeline != "": # TODO remove testers check
 			logging.debug("Evaluating account {}".format(user.key.id()))
 			
+		if user.token_timeline != "":
 			# Skip this user if it's a weekend in their timezone
 			timeline_work_timezone = pytz.timezone(user.timeline_work_timezone)
 			now_utc = pytz.utc.localize(now)
@@ -653,16 +641,4 @@ def task_run_pins():
 						logging.error("Error pushing pin for account {}: HTTP status {}".format(user.key.id(), e.code))
 				except:
 					logging.error("Error pushing pin for account {}".format(user.key.id()))
-	return "", 200
-
-
-# TODO temporary function, adds users to the testing group
-@app.route('/testers/add/<percentage>')
-def add_testers(percentage):
-	chance = float(percentage)/100
-	users = models.User.query(models.User.tester == False)
-	for user in users:
-		if random.random() < chance:
-			user.tester = True
-			user.put()
 	return "", 200
