@@ -57,21 +57,11 @@
 	<div class="item-container">
 		<div class="item-container-header">Commute on your timeline</div>
 		<div class="item-container-content">
-			{% if prefill.tester %}
-			<div class="item">
-				<strong>Awesome, you're in the closed beta!</strong> You've been randomly selected for a beta test of Commute's Pebble timeline integration. Hope you like it! You can send any feedback to <a href="mailto:dries@nexworx.com">dries@nexworx.com</a>.
-			</div>
 			<label class="item item-subtitle-wrapper">
 				Get traffic on Pebble timeline
 				<div class="item-subtitle">Receive pins and reminders from Commute</div>
 				<input type="checkbox" class="item-toggle" id="timeline_enabled" {% if prefill.timeline_enabled %} checked {% endif %}>
 			</label>
-			{% else %}
-			<div class="item">
-				<strong>Coming soon:</strong> have your watch tell you when to leave for work! We'll soon push traffic info straight to your Pebble's timeline.
-				<input type="checkbox" style="display:none;" id="timeline_enabled" {% if prefill.timeline_enabled %} checked {% endif %}>
-			</div>
-			{% endif %}
 			<label class="item">
 				Arrive at work by
 				<input type="time" class="item-time" id="timeline_work_arrival" value="{{ prefill.timeline_work_arrival }}">
@@ -80,14 +70,12 @@
 				Leave work at
 				<input type="time" class="item-time" id="timeline_work_departure" value="{{ prefill.timeline_work_departure }}">
 			</label>
-			{% if prefill.tester %}
 			<div class="item">
-				<strong>Quick note:</strong> when you first enable this or update your settings later, we first have to collect some data about traffic conditions around your commute time. This means you won't get a timeline pin for your first drive from home to work.
+				<strong>Quick note:</strong> when you first enable this or update your settings later, we first have to collect some data about traffic conditions around your commute time. This means you won't get a timeline pin for your first/next drive from home to work.
 			</div>
-			{% endif %}
 		</div>
 		<div class="item-container-footer">
-			Traffic info is always an estimate! Always allow time for unforeseen circumstances on the road.
+			Traffic info is always an estimate! Always allow time for unforeseen circumstances on the road. Don't use this app while driving.
 		</div>
 		<div class="item-container-footer">
 			The developer of this application cannot be held responsible for any consequences related to your use of this app and the information it provides.
