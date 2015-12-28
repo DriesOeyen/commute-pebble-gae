@@ -6,7 +6,6 @@ import json
 import logging
 import math
 import pytz
-import random
 import urllib
 import urllib2
 from google.appengine.ext import ndb
