@@ -195,17 +195,6 @@
 		"outputPathIsSetByUser": 0,
 		"outputStyle": 1
 		},
-	"\/lib\/Werkzeug-0.11.dist-info\/metadata.json": {
-		"fileType": 524288,
-		"ignore": 1,
-		"ignoreWasSetByUser": 0,
-		"inputAbbreviatedPath": "\/lib\/Werkzeug-0.11.dist-info\/metadata.json",
-		"orderOutput": 0,
-		"outputAbbreviatedPath": "\/lib\/Werkzeug-0.11.dist-info\/metadata-min.json",
-		"outputPathIsOutsideProject": 0,
-		"outputPathIsSetByUser": 0,
-		"outputStyle": 1
-		},
 	"\/lib\/werkzeug\/debug\/shared\/console.png": {
 		"fileType": 32768,
 		"ignore": 0,
@@ -673,7 +662,7 @@
 		},
 	"\/static\/js\/dist\/jstz.min.js": {
 		"fileType": 64,
-		"ignore": 0,
+		"ignore": 1,
 		"ignoreWasSetByUser": 0,
 		"inputAbbreviatedPath": "\/static\/js\/dist\/jstz.min.js",
 		"outputAbbreviatedPath": "\/static\/js\/dist\/jstz.min.min.js",
@@ -708,8 +697,8 @@
 	},
 "projectAttributes": {
 	"bowerAbbreviatedPath": "static",
-	"displayValue": "commute-pebble",
-	"displayValueWasSetByUser": 0,
+	"displayValue": "commute-pebble-gae",
+	"displayValueWasSetByUser": 1,
 	"iconImageName": "globe_yellow"
 	},
 "projectSettings": {

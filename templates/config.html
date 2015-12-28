@@ -10,7 +10,12 @@
 	<input type="hidden" id="submit_to" value="{{ url_for('put_user', token_account=prefill.token_account) }}">
 	<input type="hidden" id="return_to" value="{{ prefill.return_to }}">
 	<input type="hidden" id="token_account" value="{{ prefill.token_account }}">
-	<input type="hidden" id="token_timeline" value="{{ prefill.token_timeline }}">
+
+	<div class="item-container">
+		<div class="button-container">
+			<input type="button" class="item-button save" value="SAVE">
+		</div>
+	</div>
 	
 	<div class="item-container">
 		<div class="item-container-header">Your addresses</div>
@@ -52,12 +57,9 @@
 	<div class="item-container">
 		<div class="item-container-header">Commute on your timeline</div>
 		<div class="item-container-content">
-			<div class="item">
-				<strong>Coming soon:</strong> have your watch tell you when to leave for work! We'll soon push traffic info straight to your Pebble's timeline.
-			</div>
-			<label class="item item-subtitle-wrapper" style="display:none;">
+			<label class="item item-subtitle-wrapper">
 				Get traffic on Pebble timeline
-				<div class="item-subtitle">Show traffic around your commute times</div>
+				<div class="item-subtitle">Receive pins and reminders from Commute</div>
 				<input type="checkbox" class="item-toggle" id="timeline_enabled" {% if prefill.timeline_enabled %} checked {% endif %}>
 			</label>
 			<label class="item">
@@ -68,9 +70,12 @@
 				Leave work at
 				<input type="time" class="item-time" id="timeline_work_departure" value="{{ prefill.timeline_work_departure }}">
 			</label>
+			<div class="item">
+				<strong>Quick note:</strong> when you first enable this or update your settings later, we first have to collect some data about traffic conditions around your commute time. This means you won't get a timeline pin for your first/next drive from home to work.
+			</div>
 		</div>
 		<div class="item-container-footer">
-			Traffic info is always an estimate! Always allow time for unforeseen circumstances on the road.
+			Traffic info is always an estimate! Always allow time for unforeseen circumstances on the road. Don't use this app while driving.
 		</div>
 		<div class="item-container-footer">
 			The developer of this application cannot be held responsible for any consequences related to your use of this app and the information it provides.
@@ -79,8 +84,12 @@
 
 	<div class="item-container">
 		<div class="button-container">
-			<input type="button" class="item-button" id="save" value="SAVE">
+			<input type="button" class="item-button save" value="SAVE">
 		</div>
+	</div>
+	
+	<div class="item-container" style="text-align: center;">
+		Need help? <a href="mailto:dries@nexworx.com?subject=Commute%20support%20request%20%5B{{ prefill.token_account }}%5D">Tap here to contact us.</a>
 	</div>
 		
 	<script type="text/javascript" src="{{ url_for('static', filename='bower_components/pebble-slate/dist/js/slate.min.js') }}"></script>

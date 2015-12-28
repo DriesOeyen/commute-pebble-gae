@@ -1,7 +1,7 @@
 // @codekit-prepend "dist/jstz.js"
 /* global jstz:true */
 
-$('#save').on('click', function() {
+$('.save').on('click', function() {
 	var regex_time = /([01]\d|2[0-3]):([0-5]\d)/;
 	
 	if($('#address_home').val() === "" || $('#address_work').val() === "") {
@@ -12,7 +12,6 @@ $('#save').on('click', function() {
 		var timeline_work_arrival = $('#timeline_work_arrival').val().split(':');
 		var timeline_work_departure = $('#timeline_work_departure').val().split(':');
 		var data = {
-			'token_timeline': $('#token_timeline').val(),
 			'address_home': $('#address_home').val(),
 			'address_work': $('#address_work').val(),
 			'route_avoid_tolls': $('#route_avoid_tolls').prop('checked'),

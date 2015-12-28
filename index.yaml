@@ -1,0 +1,19 @@
+indexes:
+- kind: User
+  properties:
+  - name: timeline_enabled
+  - name: timeline_work_arrival
+- kind: User
+  properties:
+  - name: timeline_enabled
+  - name: timeline_work_departure
+- kind: User
+  properties:
+  - name: tester
+  - name: timeline_enabled
+  - name: timeline_work_arrival
+- kind: User
+  properties:
+  - name: tester
+  - name: timeline_enabled
+  - name: timeline_work_departure
