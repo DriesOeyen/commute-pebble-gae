@@ -354,6 +354,21 @@ def send_pin(user, route, route_title, directions, departure_local, app_launch_c
 		)
 		user.timeline_onboarding_sent = True
 		user.put()
+	elif user.send_timeline_welcome_back:
+		timeline_work_arrival_string = user.timeline_work_arrival_local.strftime(time_format)
+		timeline_work_departure_string = user.timeline_work_departure_local.strftime(time_format)
+		pin['createNotification'] = dict(
+			layout = dict(
+				type = "genericNotification",
+				title = "Commute pins are back!",
+				tinyIcon = "system://images/CAR_RENTAL",
+				body = "We had some trouble with the DST switch – sorry about that. Your settings are: arrive at work at {}, leave work at {}. If this looks wrong, please go to Commute's settings in the Pebble app on your phone. Thanks!".format(timeline_work_arrival_string, timeline_work_departure_string),
+				primaryColor = "black",
+				backgroundColor = "orange"
+			)
+		)
+		user.send_timeline_welcome_back = False
+		user.put()
 	
 	# Send pin
 	try:

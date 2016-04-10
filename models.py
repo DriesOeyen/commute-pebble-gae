@@ -4,6 +4,7 @@ class User(ndb.Model):
 	token_timeline = ndb.StringProperty(default="")
 	am_pm = ndb.BooleanProperty(default=False)
 	tester = ndb.BooleanProperty(default=False)
+	send_timeline_welcome_back = ndb.BooleanProperty(default=False)
 	
 	address_home = ndb.StringProperty()
 	address_work = ndb.StringProperty()
