@@ -9,6 +9,7 @@ import pytz
 import urllib
 import urllib2
 from google.appengine.api import taskqueue
+from google.appengine.api import urlfetch
 from google.appengine.ext import ndb
 
 app = flask.Flask(__name__)
@@ -160,6 +161,7 @@ def fetch_directions(user, request_orig, request_dest, request_coord = ""):
 	}
 	
 	try:
+		urlfetch.set_default_fetch_deadline(10)
 		return urllib2.urlopen("{}/directions/json?{}".format(google_maps_base_url, urllib.urlencode(data_params))).read()
 	except urllib2.HTTPError, e:
 		logging.error("Error while fetching directions. HTTP status: {} / Request: {}".format(e.code, data_params))
