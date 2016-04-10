@@ -508,7 +508,12 @@ def schedule_next_pin_regular(user, reason, now_local, timezone):
 		if user.trip_home_work_count == 0:
 			morning_directions_json = fetch_directions(user, REQUEST_TYPE_HOME, REQUEST_TYPE_WORK)
 			morning_directions = parse_directions(morning_directions_json)
-			duration_estimate = datetime.timedelta(seconds = morning_directions['duration_traffic'])
+			
+			# Handle Google Maps errors by using default duration estimate
+			if morning_directions['status'] != "OK":
+				duration_estimate = datetime.timedelta(hours = 4)
+			else:
+				duration_estimate = datetime.timedelta(seconds = morning_directions['duration_traffic'])
 		else:
 			duration_estimate = datetime.timedelta(seconds = user.trip_home_work_mean)
 		next_departure = next_arrival - duration_estimate
