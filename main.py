@@ -442,7 +442,8 @@ def create_pin_regular(user, reason, user_config_version):
 			user.put()
 			return
 		else:
-			raise Exception("Google Maps returned an unexpected status: {}".format(directions['status']))
+			schedule_next_pin_regular(user, reason, now_local, timezone)
+			return
 	
 	# Send pin
 	if reason == PIN_REASON_MORNING:
