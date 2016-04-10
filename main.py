@@ -368,7 +368,6 @@ def send_pin(user, route, route_title, directions, departure_local, app_launch_c
 			# Timeline token invalid, remove
 			logging.warning("Timeline token {} for account {} has been invalidated, removing...".format(user.token_timeline, user.key.id()))
 			user.token_timeline = ""
-			user.updated = datetime.datetime.utcnow()
 			user.put()
 		else:
 			logging.error("Error pushing pin for account {}: HTTP status {}".format(user.key.id(), e.code))
@@ -404,12 +403,18 @@ def create_pin_regular(user, reason, user_config_version):
 	
 	# Drop pin if user config changed
 	if user_config_version != user.updated.isoformat():
-		logging.warning("User config changed since this pin was scheduled, dropping pin")
+		logging.debug("User config changed since this pin was scheduled, dropping pin")
+		return
+	
+	# Drop pin and schedule next one if timeline token is currently unknown
+	if user.token_timeline == "":
+		logging.debug("User doesn't currently have a timeline token, dropping pin and scheduling next pin")
+		schedule_next_pin_regular(user, reason, now_local, timezone)
 		return
 	
 	# Drop pin and schedule next one if it's a weekend
 	if now_local.isoweekday() == 6 or now_local.isoweekday() == 7:
-		logging.debug("It's a weekend day for this user, dropping pin")
+		logging.debug("It's a weekend day for this user, dropping pin and scheduling next pin")
 		schedule_next_pin_regular(user, reason, now_local, timezone)
 		return
 	
