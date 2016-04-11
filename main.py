@@ -444,8 +444,15 @@ def create_pin_regular(user, reason, user_config_version):
 		dest = REQUEST_TYPE_HOME
 	else:
 		raise ValueError("Unexpected pin reason {}".format(reason))
+	
 	directions_json = fetch_directions(user, orig, dest)
-	directions = parse_directions(directions_json)
+	try:
+		directions = parse_directions(directions_json)
+	except KeyError:
+		# Drop pin and schedule next one if directions information is incomplete
+		logging.warning("Directions information incomplete, dropping pin and scheduling next pin")
+		schedule_next_pin_regular(user, reason, now_local, timezone)
+		return
 	
 	# Handle Google Maps errors, shut off timeline if user intervention is required
 	if directions['status'] != "OK":
