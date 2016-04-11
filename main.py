@@ -460,6 +460,14 @@ def create_pin_regular(user, reason, user_config_version):
 			schedule_next_pin_regular(user, reason, now_local, timezone)
 			return
 	
+	# Catch commutes that are obviously too long to be real, shut off timeline
+	if directions['duration_traffic'] > (12 * 3600):
+		logging.warning("This commute takes over 12 hours: {} seconds. Disabling timeline setting for account {}.".format(directions['duration_traffic'], user.key.id()))
+		user.timeline_enabled = False
+		user.updated = datetime.datetime.utcnow()
+		user.put()
+		return
+	
 	# Send pin
 	if reason == PIN_REASON_MORNING:
 		route = "Home > work"
