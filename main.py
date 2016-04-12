@@ -277,7 +277,7 @@ def send_pin(user, route, route_title, directions, departure_local, app_launch_c
 	departure_string = departure_local.strftime(time_format)
 	departure_utc = pytz.utc.normalize(departure_local.astimezone(pytz.utc))
 	
-	arrival_local = departure_local + datetime.timedelta(minutes = duration_traffic)
+	arrival_local = departure_local + datetime.timedelta(seconds = directions['duration_traffic'])
 	arrival_string = arrival_local.strftime(time_format)
 	
 	if duration_delay == 0:
