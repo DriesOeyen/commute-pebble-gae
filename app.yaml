@@ -3,9 +3,10 @@
 # * bentley-2
 # * chevrolet-3
 # * dodge-4
+# * elfin-5
 
 application: commute-pebble
-version: dodge-4
+version: elfin-5
 runtime: python27
 api_version: 1
 threadsafe: yes
@@ -14,6 +15,9 @@ handlers:
 - url: /static
   static_dir: static
   secure: always
+- url: /headlights
+  script: main.app
+  secure: never
 - url: .*
   script: main.app
   secure: always

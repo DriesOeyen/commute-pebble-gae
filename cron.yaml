@@ -1,5 +1,1 @@
 cron:
-- description: Push pins to timeline
-  url: /tasks/pins
-  target: dodge-4
-  schedule: every 5 minutes

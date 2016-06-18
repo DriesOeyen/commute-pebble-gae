@@ -1,0 +1,56 @@
+<html>
+	<head>
+		<title>commute-headlights</title>
+	</head>
+	<body>
+		<h1>commute-headlights</h1>
+		<p>Load time (UTC): {{ now }}</p>
+		<script type="text/javascript" src="/_ah/channel/jsapi"></script>
+		<script type="text/javascript">
+			onMessage = function(m) {
+				var json = JSON.parse(m.data);
+				
+				var action;
+				switch (json.action) {
+					case "error":
+						action = "error";
+						break;
+					case "directions":
+						if (json.orig == 0 && json.dest == 2) {
+							action = "event/location_work";
+						} else if (json.orig == 0 && json.dest == 1) {
+							action = "event/location_home";
+						} else if (json.orig == 1 && json.dest == 2) {
+							action = "event/home_work";
+						} else if (json.orig == 2 && json.dest == 1) {
+							action = "event/work_home";
+						}
+						break;
+					default:
+						action = "event/" + json.action;
+						break;
+				}
+				
+				var request = new XMLHttpRequest();
+				var url = "http://localhost:5000/" + action;
+				request.open("GET", url, true);
+				request.send();
+			}
+			
+			onClose = function() {
+				location.reload();
+			}
+			
+			openChannel = function() {
+				var token = "{{ token }}";
+				var channel = new goog.appengine.Channel(token);
+				var socket = channel.open();
+				socket.onmessage = onMessage;
+				socket.onclose = onClose;
+				socket.onerror = onClose;
+			}
+			
+			setTimeout(openChannel, 100);
+		</script>
+	</body>
+</html>

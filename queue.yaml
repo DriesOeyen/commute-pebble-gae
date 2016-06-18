@@ -1,0 +1,5 @@
+total_storage_limit: 100M
+queue:
+- name: pins-regular
+  bucket_size: 5
+  rate: 1/s
