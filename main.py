@@ -8,6 +8,7 @@ import math
 import pytz
 import urllib
 import urllib2
+from google.appengine.api import channel
 from google.appengine.api import taskqueue
 from google.appengine.api import urlfetch
 from google.appengine.ext import ndb
@@ -19,6 +20,7 @@ google_maps_base_url = "https://maps.googleapis.com/maps/api"
 
 pebble_timeline_base_url = "https://timeline-api.getpebble.com/v1"
 
+log_channel_client = "xCSnn8e3Uc2FrrYCK1hccBxleed9Bb"
 
 REQUEST_TYPE_LOCATION = 0
 REQUEST_TYPE_HOME = 1
@@ -40,11 +42,16 @@ def page_not_found(e):
 
 @app.errorhandler(500)
 def application_error(e):
+	log_channel_send("error")
 	return flask.render_template("error.html", error_title = "Server error (error 500)", error_message = "Something went wrong. Please try again later."), 500
 
 
 @app.route('/config/<token_account>')
 def get_config(token_account):
+	# Log action on log channel
+	log_channel_send("settings")
+	
+	# Determine return URL
 	return_to = flask.request.args.get('return_to', "pebblejs://close#")
 	
 	# Fetch user
@@ -126,6 +133,9 @@ def put_user(token_account):
 
 
 def fetch_directions(user, request_orig, request_dest, request_coord = ""):
+	# Log action on log channel
+	log_channel_send("directions", request_orig, request_dest)
+	
 	# Determine origin and destination
 	if request_orig == REQUEST_TYPE_LOCATION:
 		orig = request_coord
@@ -556,3 +566,24 @@ def schedule_next_pin_regular(user, reason, now_local, timezone):
 	
 	eta = get_next_local_time_occurence(eta_time.time(), now_local, timezone)
 	schedule_pin(user, reason, eta)
+
+
+def log_channel_send(action, orig = None, dest = None):
+	msg = {
+		'action': action,
+		'orig': orig,
+		'dest': dest
+	}
+	channel.send_message(log_channel_client, json.dumps(msg))
+
+
+@app.route('/headlights')
+def log_headlights():
+	client = flask.request.args.get('client', "")
+	
+	# Check if client ID matches (serves as API key)
+	if client != log_channel_client:
+		flask.abort(404)
+	
+	token = channel.create_channel(client)
+	return flask.render_template("headlights.html", token = token, now = datetime.datetime.utcnow().strftime('%c'))
