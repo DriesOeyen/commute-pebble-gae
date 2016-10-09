@@ -1,0 +1,19 @@
+# Version themes: currencies
+# * ariary-1
+
+service: billing
+runtime: python27
+api_version: 1
+threadsafe: true
+
+handlers:
+- url: /static
+  static_dir: static
+  secure: always
+- url: .*
+  script: billing.app
+  secure: always
+
+libraries:
+- name: ssl
+  version: latest
