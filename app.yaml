@@ -5,8 +5,6 @@
 # * dodge-4
 # * elfin-5
 
-application: commute-pebble
-version: elfin-5
 runtime: python27
 api_version: 1
 threadsafe: yes

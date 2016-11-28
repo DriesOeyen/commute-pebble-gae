@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 import models
 import flask
 
@@ -187,7 +190,10 @@ def parse_directions(directions_json):
 	status = directions['status']
 	if status == "OK":
 		duration_normal = directions['routes'][0]['legs'][0]['duration']['value']
-		duration_traffic = directions['routes'][0]['legs'][0]['duration_in_traffic']['value']
+		try:
+			duration_traffic = directions['routes'][0]['legs'][0]['duration_in_traffic']['value']
+		except KeyError:
+			duration_traffic = duration_normal
 		duration_difference = duration_traffic - duration_normal
 		if duration_difference < 0: # Prevent negative delays
 			duration_difference = 0
