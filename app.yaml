@@ -14,13 +14,12 @@ handlers:
 - url: /static
   static_dir: static
   secure: always
-- url: /headlights
-  script: main.app
-  secure: never
 - url: .*
   script: main.app
   secure: always
 
 libraries:
-- name: jinja2
+- name: flask
+  version: 0.12
+- name: pytz
   version: latest
