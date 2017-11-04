@@ -22,5 +22,7 @@ handlers:
   secure: always
 
 libraries:
-- name: jinja2
+- name: flask
+  version: 0.12
+- name: pytz
   version: latest
