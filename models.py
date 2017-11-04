@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 """Google Cloud Datastore model definitions."""
 
 from google.appengine.ext import ndb

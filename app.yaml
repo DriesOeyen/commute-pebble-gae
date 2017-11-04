@@ -6,8 +6,6 @@
 # * elfin-5
 # * ferrari-6
 
-application: commute-pebble
-version: ferrari-6
 runtime: python27
 api_version: 1
 threadsafe: yes
