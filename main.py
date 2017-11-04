@@ -10,15 +10,20 @@ import datetime
 import json
 import logging
 import pytz
+import traceback
 import urllib
 import urllib2
+from apiclient.discovery import build
 from google.appengine.api import taskqueue
 from google.appengine.api import urlfetch
+from oauth2client.contrib.appengine import AppAssertionCredentials
 
 app = flask.Flask(__name__)
 
 google_maps_key = "AIzaSyDLG4q9x0pkI-eRyyL7x__pl2btULRRK8k"
 google_maps_base_url = "https://maps.googleapis.com/maps/api"
+
+google_pubsub_topic = "projects/commute-pebble/topics/fetches"
 
 pebble_timeline_base_url = "https://timeline-api.getpebble.com/v1"
 
@@ -44,15 +49,15 @@ def page_not_found(e):
 @app.errorhandler(500)
 def application_error(e):
     """Display 500 server error."""
-    log_channel_send("error")
+    log_event("error")
     return flask.render_template("error.html", error_title="Server error (error 500)", error_message="Something went wrong. Please try again later."), 500
 
 
 @app.route('/config/<token_account>')
 def get_config(token_account):
     """Display a user's configuration screen."""
-    # Log action on log channel
-    log_channel_send("settings")
+    # Log event
+    log_event("settings")
 
     # Determine return URL
     return_to = flask.request.args.get('return_to', "pebblejs://close#")
@@ -145,8 +150,8 @@ def fetch_directions(user, request_orig, request_dest, request_coord=""):
     - request_dest: REQUEST_TYPE_HOME or REQUEST_TYPE_WORK
     - request_coord: the coordinates to be used if request_orig is REQUEST_TYPE_LOCATION
     """
-    # Log action on log channel
-    log_channel_send("directions", request_orig, request_dest)
+    # Log event
+    log_event("directions", request_orig, request_dest)
 
     # Determine origin and destination
     if request_orig == REQUEST_TYPE_LOCATION:
@@ -591,11 +596,24 @@ def schedule_next_pin_regular(user, reason, now_local, timezone):
     schedule_pin(user, reason, eta)
 
 
-def log_channel_send(action, orig=None, dest=None):
-    """Send an event over the log channel for Headlights."""
+def log_event(action, orig=None, dest=None):
+    """Log an event by publishing to Pub/Sub. Used by Headlights."""
     msg = {
-        'action': action,
-        'orig': orig,
-        'dest': dest
+        'action': str(action),
+        'orig': str(orig),
+        'dest': str(dest)
     }
-    # TODO Send through Pub/Sub
+    payload = {
+        'messages': [
+            {
+                'attributes': msg
+            }
+        ]
+    }
+
+    try:
+        credentials = AppAssertionCredentials(scope='https://www.googleapis.com/auth/pubsub')
+        pubsub = build('pubsub', 'v1', credentials=credentials)
+        pubsub.projects().topics().publish(topic=google_pubsub_topic, body=payload).execute()
+    except Exception:  # Ensure a failure here doesn't interrupt the original request
+        print traceback.format_exc()
