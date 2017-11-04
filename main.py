@@ -12,7 +12,6 @@ import logging
 import pytz
 import urllib
 import urllib2
-from google.appengine.api import channel
 from google.appengine.api import taskqueue
 from google.appengine.api import urlfetch
 
@@ -22,8 +21,6 @@ google_maps_key = "AIzaSyDLG4q9x0pkI-eRyyL7x__pl2btULRRK8k"
 google_maps_base_url = "https://maps.googleapis.com/maps/api"
 
 pebble_timeline_base_url = "https://timeline-api.getpebble.com/v1"
-
-log_channel_client = "xCSnn8e3Uc2FrrYCK1hccBxleed9Bb"
 
 REQUEST_TYPE_LOCATION = 0
 REQUEST_TYPE_HOME = 1
@@ -601,17 +598,4 @@ def log_channel_send(action, orig=None, dest=None):
         'orig': orig,
         'dest': dest
     }
-    channel.send_message(log_channel_client, json.dumps(msg))
-
-
-@app.route('/headlights')
-def log_headlights():
-    """Client page forwarding log channel events to local Headlights server."""
-    client = flask.request.args.get('client', "")
-
-    # Check if client ID matches (serves as API key)
-    if client != log_channel_client:
-        flask.abort(404)
-
-    token = channel.create_channel(client)
-    return flask.render_template("headlights.html", token=token, now=datetime.datetime.utcnow().strftime('%c'))
+    # TODO Send through Pub/Sub

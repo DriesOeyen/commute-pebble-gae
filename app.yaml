@@ -14,9 +14,6 @@ handlers:
 - url: /static
   static_dir: static
   secure: always
-- url: /headlights
-  script: main.app
-  secure: never
 - url: .*
   script: main.app
   secure: always
