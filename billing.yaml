@@ -17,3 +17,6 @@ handlers:
 libraries:
 - name: ssl
   version: latest
+
+env_variables:
+  PYTHONHTTPSVERIFY: 1
