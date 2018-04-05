@@ -23,3 +23,8 @@ libraries:
   version: 0.12
 - name: pytz
   version: latest
+- name: ssl
+  version: latest
+
+env_variables:
+  PYTHONHTTPSVERIFY: 1
