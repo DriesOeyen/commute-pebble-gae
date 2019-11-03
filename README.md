@@ -15,6 +15,12 @@ Before deploying, open `main.py` and set the following variables:
 - `google_maps_key`: your own Google Maps API key
 - `pebble_timeline_base_url`: a replacement for Pebble's Timeline API
 
+Before deploying, install Python dependencies with the following command:
+
+```sh
+$ pip install -r requirements.txt -t lib/
+```
+
 Then deploy to Google App Engine.
 In order to use the app, compile your own version of the Pebble watch app (repo linked above) and make sure to update the server base URL to that of your own App Engine back-end.
 
