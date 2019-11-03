@@ -18,12 +18,13 @@ from google.appengine.ext import ndb
 
 app = flask.Flask(__name__)
 
-google_maps_key = "AIzaSyDLG4q9x0pkI-eRyyL7x__pl2btULRRK8k"
+google_maps_key = "google_maps_api_key_here"
 google_maps_base_url = "https://maps.googleapis.com/maps/api"
 
 pebble_timeline_base_url = "https://timeline-api.getpebble.com/v1"
 
-log_channel_client = "xCSnn8e3Uc2FrrYCK1hccBxleed9Bb"
+# TODO App Engine channels are deprecated. Switching to Pub/Sub on ferrari-6 branch.
+log_channel_client = "app_engine_channel_client_id_here"  # Hardcoded because the only client is my personal rPi
 
 REQUEST_TYPE_LOCATION = 0
 REQUEST_TYPE_HOME = 1
