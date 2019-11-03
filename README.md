@@ -9,7 +9,7 @@ This is the server back-end, meant to be deployed on Google App Engine. All rele
 - :cloud: Server back-end (required): this repository
 - :bulb: Activity indicator LED-strip (optional): https://github.com/DriesOeyen/commute-pebble-headlights/
 
-## Deploy instructions instructions
+## Deploy instructions
 Before deploying, open `main.py` and set the following variables:
 
 - `google_maps_key`: your own Google Maps API key
